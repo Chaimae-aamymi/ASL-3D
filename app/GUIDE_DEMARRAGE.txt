@@ -1,0 +1,185 @@
+═══════════════════════════════════════════════════════════════════════════════
+                       🏛️ ASL-3D - GUIDE DE DÉMARRAGE RAPIDE
+═══════════════════════════════════════════════════════════════════════════════
+
+Créée avec ❤️ par AAMYMI Chaimae
+
+───────────────────────────────────────────────────────────────────────────────
+📋 STRUCTURE DU PROJET
+───────────────────────────────────────────────────────────────────────────────
+
+app/
+├── app.py                          ✓ Application Flask principale (600+ lignes)
+├── run.py                          ✓ Script de démarrage
+├── degradation_detector.py         ✓ Module IA de détection (400+ lignes)
+├── reconstruction_engine.py        ✓ Moteur 3D et restauration (450+ lignes)
+├── config.py                       ✓ Configuration
+├── requirements.txt                ✓ Dépendances Python
+├── README.md                       ✓ Documentation complète
+├── .gitignore                      ✓ Git ignore
+│
+├── templates/                      📁 Fichiers HTML (0% JavaScript)
+│   ├── index.html                  ✓ Accueil et présentation
+│   ├── scanner.html                ✓ Interface de scan 3D
+│   ├── analysis.html               ✓ Analyse des dégradations
+│   ├── reconstruction.html         ✓ Reconstruction 3D
+│   └── restoration_guide.html      ✓ Guide de restauration
+│
+├── static/
+│   └── css/
+│       └── style.css               ✓ Styles (2500+ lignes, full responsive)
+│
+├── uploads/                        📁 Dossier des images uploadées
+└── outputs/                        📁 Dossier des résultats générés
+
+───────────────────────────────────────────────────────────────────────────────
+🚀 INSTALLATION RAPIDE (3 étapes)
+───────────────────────────────────────────────────────────────────────────────
+
+1️⃣  CLONER OU SE PLACER DANS LE DOSSIER
+   
+   cd c:\Users\HP\pfe\app
+
+2️⃣  INSTALLER LES DÉPENDANCES
+
+   # Option A: Avec pip (Windows)
+   pip install -r requirements.txt
+
+   # Option B: Avec conda
+   conda create -n heritage3d python=3.9
+   conda activate heritage3d
+   pip install -r requirements.txt
+
+3️⃣  DÉMARRER L'APPLICATION
+
+   python run.py
+
+   Puis ouvrez votre navigateur:
+   👉 http://127.0.0.1:5000
+
+───────────────────────────────────────────────────────────────────────────────
+✨ FONCTIONNALITÉS PRINCIPALES
+───────────────────────────────────────────────────────────────────────────────
+
+🔍 SCANNER 3D
+  • Téléchargement d'images
+  • Configuration des paramètres
+  • Aperçu en temps réel
+  • Conversion 2D → 3D
+
+🤖 DÉTECTION IA (6 Types)
+  • 🔴 Fissures (critique)
+  • 💧 Humidité (sérieux)
+  • ⚡ Érosion (moyen)
+  • 🌿 Champignons (critique)
+  • 🎨 Décoloration (léger)
+  • 💥 Effritement (moyen)
+
+🏗️  RECONSTRUCTION 3D
+  • Modèles haute qualité
+  • Export OBJ/PLY/glTF
+  • Contrôle des paramètres
+  • Textures appliquées
+
+📋 PLANS DE RESTAURATION
+  • Phases priorisées
+  • Estimations coûts/délais
+  • Mesures de sécurité
+  • Suivi post-restauration
+
+───────────────────────────────────────────────────────────────────────────────
+🎯 FLUX D'UTILISATION
+───────────────────────────────────────────────────────────────────────────────
+
+SCANNER (capture)
+    ↓
+ANALYSIS (détection)
+    ↓
+RECONSTRUCTION (modèle 3D)
+    ↓
+RESTORATION GUIDE (planification)
+    ↓
+Rapport complet & recommandations
+
+───────────────────────────────────────────────────────────────────────────────
+📦 DÉPENDANCES
+───────────────────────────────────────────────────────────────────────────────
+
+Flask               - Framework web
+NumPy               - Calculs numériques
+Pillow              - Traitement d'images
+OpenCV              - Vision par ordinateur
+SciPy               - Traitement scientifique
+scikit-image        - Analyse d'images avancée
+
+───────────────────────────────────────────────────────────────────────────────
+⚙️  CONFIGURATION (optionnel)
+───────────────────────────────────────────────────────────────────────────────
+
+Fichier: config.py
+
+Variables principales:
+  • MAX_CONTENT_LENGTH = 50MB
+  • UPLOAD_FOLDER = 'uploads'
+  • OUTPUT_FOLDER = 'outputs'
+  • DEBUG = True (développement)
+
+───────────────────────────────────────────────────────────────────────────────
+💡 CONSEILS D'UTILISATION
+───────────────────────────────────────────────────────────────────────────────
+
+✅ Pour un bon scan:
+  • Lumière naturelle uniforme
+  • Photos de face et en biais
+  • Haute résolution
+  • Surface propre et visible
+  • Utiliser trépied si possible
+
+✅ Pour une bonne restauration:
+  • Diagnostic complet d'abord
+  • Planification minutieuse
+  • Équipe qualifiée
+  • Tests des matériaux
+  • Documentation continue
+  • Suivi régulier
+
+───────────────────────────────────────────────────────────────────────────────
+🔧 DÉPANNAGE
+───────────────────────────────────────────────────────────────────────────────
+
+❌ Erreur: "Module not found"
+   → Exécuter: pip install -r requirements.txt
+
+❌ Port 5000 déjà utilisé
+   → Modifier dans app.py: app.run(port=5001)
+
+❌ Images ne s'affichent pas
+   → Vérifier: uploads/ et outputs/ existent
+
+❌ Erreur OpenCV
+   → Exécuter: pip install opencv-python
+
+───────────────────────────────────────────────────────────────────────────────
+📚 RESSOURCES
+───────────────────────────────────────────────────────────────────────────────
+
+README.md              - Documentation complète
+config.py              - Configuration détaillée
+app.py                 - Code source API (voir docstrings)
+degradation_detector   - Module détection (voir docstrings)
+reconstruction_engine  - Module 3D (voir docstrings)
+
+───────────────────────────────────────────────────────────────────────────────
+👨‍💻 CRÉATEUR
+───────────────────────────────────────────────────────────────────────────────
+
+Développé avec passion par: AAMYMI Chaimae
+Date: 2026
+
+Pour toute question ou amélioration:
+  • Consultez le README.md
+  • Vérifiez les logs de l'application
+
+───────────────────────────────────────────────────────────────────────────────
+🏛️  Préservons notre héritage architectural avec l'Intelligence Artificielle
+═══════════════════════════════════════════════════════════════════════════════

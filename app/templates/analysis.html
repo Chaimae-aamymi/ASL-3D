@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse des Dégradations - ASL-3D</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+
+<body>
+    <div class="app-wrapper">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
+                <h1>ASL-3D</h1>
+                <p class="tagline">Restauration Numérique Intelligente de Bâtiments Historiques</p>
+            </div>
+            <nav class="sidebar-nav">
+                <span class="nav-label">Navigation</span>
+                <a href="/" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-house"></i></span><span>Accueil</span></a>
+                <a href="/scanner" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
+                <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-cube"></i></span><span>Reconstruction
+                        3D</span></a>
+                <a href="/analysis" class="nav-item active"><span class="nav-icon"><i
+                            class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse</span></a>
+                <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-clipboard-text"></i></span><span>Guide de
+                        Restauration</span></a>
+            </nav>
+            <div class="sidebar-footer">© 2026 ASL-3D</div>
+        </aside>
+
+        <!-- MAIN -->
+        <div class="main-wrapper">
+            <main class="page-content">
+
+                <div class="page-header">
+                    <div class="breadcrumb"><i class="ph-fill ph-house" style="margin-right: 4px;"></i> Accueil
+                        <span>›</span> Analyse
+                    </div>
+                    <h2>Analyse des Dégradations</h2>
+                    <p>Détection automatique par intelligence artificielle</p>
+                </div>
+
+                <section class="analysis-section">
+                    <h2>Analyser une Image</h2>
+                    <div class="analysis-container">
+                        <div class="file-selection">
+                            <h3><i class="ph-duotone ph-folder-open" style="margin-right: 8px;"></i>Sélectionner un
+                                fichier</h3>
+                            <div class="file-browser">
+                                <select id="fileSelect" class="select-input">
+                                    <option value="">-- Charger un fichier --</option>
+                                </select>
+                                <button class="btn btn-secondary" onclick="refreshFileList()">↻</button>
+                            </div>
+                        </div>
+                        <div class="image-display">
+                            <h3><i class="ph-duotone ph-image" style="margin-right: 8px;"></i>Image Originale</h3>
+                            <div id="originalImage" class="image-container">
+                                <p class="placeholder">Sélectionnez une image</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:1.25rem;">
+                        <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeDegradation()"
+                            style="width:100%;justify-content:center;">
+                            <i class="ph-bold ph-magnifying-glass" style="margin-right: 8px;"></i> Lancer l'Analyse des
+                            Dégradations
+                        </button>
+                    </div>
+
+                    <div class="progress-indicator" id="progressSection" style="display: none;">
+                        <h3><i class="ph-duotone ph-hourglass-high" style="margin-right: 8px;"></i> Analyse en Cours
+                        </h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="analyzeProgress"></div>
+                        </div>
+                        <p id="progressText">Analyse de l'image...</p>
+                    </div>
+
+                    <div class="analysis-results" id="resultsSection" style="display: none;">
+                        <h3><i class="ph-fill ph-check-circle" style="color:var(--accent-2); margin-right: 8px;"></i>
+                            Résultats de l'Analyse</h3>
+                        <div class="severity-indicator">
+                            <h4>Niveau de Sévérité Global</h4>
+                            <div class="severity-display" id="severityDisplay"></div>
+                        </div>
+                        <div class="detected-degradations">
+                            <h4>Dégradations Détectées</h4>
+                            <div id="degradationsList" class="degradations-list"></div>
+                        </div>
+                        <div class="visualization-area">
+                            <h3>Visualisation des Dégradations</h3>
+                            <img id="visualizationImage" src="" alt="Dégradations détectées">
+                        </div>
+                        <div class="recommendations-area">
+                            <h4>Recommandations d'Intervention</h4>
+                            <div id="recommendationsList" class="recommendations-list"></div>
+                        </div>
+                        <div class="action-buttons">
+                            <form id="formRestoration" action="/restoration-guide" method="get">
+                                <button type="submit" class="btn btn-primary" style="justify-content:center;"><i
+                                        class="ph-bold ph-clipboard-text" style="margin-right: 8px;"></i> Générer Plan
+                                    de Restauration</button>
+                            </form>
+                            <button class="btn btn-secondary" onclick="downloadReport()"
+                                style="justify-content:center;"><i class="ph-bold ph-download-simple"
+                                    style="margin-right: 8px;"></i> Télécharger le Rapport</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="degradation-guide">
+                    <h3>Guide des Types de Dégradation</h3>
+                    <div class="guide-grid">
+                        <div class="guide-card">
+                            <h4><i class="ph-duotone ph-asterisk" style="color:var(--accent-3);margin-right:8px;"></i>
+                                Fissures</h4>
+                            <p><strong>Sévérité :</strong> Haute</p>
+                            <p><strong>Description :</strong> Ruptures dans la structure, peuvent indiquer des problèmes
+                                structurels.</p>
+                            <p><strong>Action :</strong> Évaluation urgente requise</p>
+                        </div>
+                        <div class="guide-card">
+                            <h4><i class="ph-duotone ph-drop" style="color:var(--accent-primary);margin-right:8px;"></i>
+                                Humidité</h4>
+                            <p><strong>Sévérité :</strong> Moyenne</p>
+                            <p><strong>Description :</strong> Infiltrations d'eau, effloresences salines, zones humides.
+                            </p>
+                            <p><strong>Action :</strong> Diagnostic de source et traitement</p>
+                        </div>
+                        <div class="guide-card">
+                            <h4><i class="ph-duotone ph-wind" style="color:var(--accent-2);margin-right:8px;"></i>
+                                Érosion</h4>
+                            <p><strong>Sévérité :</strong> Moyenne</p>
+                            <p><strong>Description :</strong> Usure progressive de la surface due aux agents
+                                climatiques.</p>
+                            <p><strong>Action :</strong> Protection et retraitement</p>
+                        </div>
+                        <div class="guide-card">
+                            <h4><i class="ph-duotone ph-plant" style="color:var(--accent-3);margin-right:8px;"></i>
+                                Champignons</h4>
+                            <p><strong>Sévérité :</strong> Haute</p>
+                            <p><strong>Description :</strong> Moisissures, lichens, végétation pathogène.</p>
+                            <p><strong>Action :</strong> Traitement immédiat</p>
+                        </div>
+                        <div class="guide-card">
+                            <h4><i class="ph-duotone ph-palette" style="color:#ffd166;margin-right:8px;"></i>
+                                Décoloration</h4>
+                            <p><strong>Sévérité :</strong> Basse</p>
+                            <p><strong>Description :</strong> Perte de couleur, altération esthétique.</p>
+                            <p><strong>Action :</strong> Nettoyage et protection</p>
+                        </div>
+                        <div class="guide-card">
+                            <h4><i class="ph-duotone ph-hammer" style="color:#ff9f1c;margin-right:8px;"></i> Effritement
+                            </h4>
+                            <p><strong>Sévérité :</strong> Moyenne</p>
+                            <p><strong>Description :</strong> Désagrégation du matériau, perte de cohésion.</p>
+                            <p><strong>Action :</strong> Consolidation et finition</p>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <footer class="footer">
+                <div class="footer-content">
+                    <p>&copy; 2026 ASL-3D - Restauration de Patrimoine Historique</p>
+                    <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () { refreshFileList(); });
+
+        function refreshFileList() {
+            fetch('/api/files')
+                .then(r => r.json())
+                .then(data => {
+                    const select = document.getElementById('fileSelect');
+                    select.innerHTML = '<option value="">-- Charger un fichier --</option>';
+                    data.files.forEach(file => {
+                        const opt = document.createElement('option');
+                        opt.value = file; opt.textContent = file;
+                        select.appendChild(opt);
+                    });
+
+                    // Auto-select file from URL if present
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const fileParam = urlParams.get('file');
+                    if (fileParam && data.files.includes(fileParam)) {
+                        select.value = fileParam;
+                        select.dispatchEvent(new Event('change'));
+                        // Automatically trigger analysis
+                        analyzeDegradation();
+                    }
+                }).catch(e => console.error('Erreur:', e));
+        }
+
+        document.getElementById('fileSelect').addEventListener('change', function () {
+            if (this.value) {
+                document.getElementById('originalImage').innerHTML =
+                    `<img src="/uploads/${this.value}" alt="Image" style="max-width:100%;max-height:380px;border-radius:10px;">`;
+            }
+        });
+
+        function analyzeDegradation() {
+            const filename = document.getElementById('fileSelect').value;
+            if (!filename) { alert('Veuillez sélectionner un fichier'); return; }
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            let progress = 0;
+            const progressFill = document.getElementById('analyzeProgress');
+            const progressText = document.getElementById('progressText');
+            const progressInterval = setInterval(() => {
+                if (progress < 90) { progress += Math.random() * 15; progressFill.style.width = Math.min(progress, 90) + '%'; }
+            }, 200);
+            const statuses = ['Analyse de l\'image...', 'Détection des fissures...', 'Analyse d\'humidité...', 'Détection des champignons...', 'Calcul de sévérité...', 'Génération de la visualisation...'];
+            let si = 0;
+            const statusInterval = setInterval(() => { if (si < statuses.length) { progressText.textContent = statuses[si++]; } }, 800);
+            fetch(`/api/detect-degradation/${filename}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    clearInterval(progressInterval); clearInterval(statusInterval);
+                    progressFill.style.width = '100%'; progressText.textContent = 'Analyse complétée !';
+                    setTimeout(() => { displayResults(data); document.getElementById('progressSection').style.display = 'none'; document.getElementById('resultsSection').style.display = 'block'; }, 500);
+                }).catch(error => { clearInterval(progressInterval); clearInterval(statusInterval); progressText.textContent = 'Erreur: ' + error; });
+        }
+
+        function displayResults(data) {
+            const sMap = { 'critique': { color: '#ff6b6b', label: '<i class="ph-bold ph-warning-circle" style="margin-right:8px;"></i> CRITIQUE - Action immédiate requise' }, 'haute': { color: '#ffa36c', label: '<i class="ph-bold ph-warning" style="margin-right:8px;"></i> HAUTE - Intervention urgente' }, 'moyenne': { color: '#ffd166', label: '<i class="ph-bold ph-lightning" style="margin-right:8px;"></i> MOYENNE - À court terme' }, 'faible': { color: '#06d6a0', label: '<i class="ph-bold ph-check-circle" style="margin-right:8px;"></i> FAIBLE - Suivi recommandé' } };
+            const sev = data.severity;
+            const sevInfo = sMap[sev] || sMap['faible'];
+            document.getElementById('severityDisplay').innerHTML = `<div style="font-size:1.1rem;font-weight:700;color:${sevInfo.color};padding:1rem;background:rgba(255,255,255,0.04);border-radius:10px;border-left:4px solid ${sevInfo.color};">${sevInfo.label}</div>`;
+            const degradationsList = document.getElementById('degradationsList');
+            degradationsList.innerHTML = '';
+            if (data.degradations && data.degradations.length > 0) {
+                data.degradations.forEach(deg => {
+                    const item = document.createElement('div');
+                    item.className = 'degradation-item-display';
+                    item.innerHTML = `<h5>${deg.type}</h5><p><strong>Sévérité :</strong> ${deg.severity}</p><p><strong>Confiance :</strong> ${(deg.confidence * 100).toFixed(0)}%</p><p><strong>Zone :</strong> ${deg.location.width} × ${deg.location.height} px</p>`;
+                    degradationsList.appendChild(item);
+                });
+            } else { degradationsList.innerHTML = '<p class="placeholder">Aucune dégradation détectée</p>'; }
+            if (data.visualization) { document.getElementById('visualizationImage').src = `/outputs/${data.visualization}`; }
+            const recommendationsList = document.getElementById('recommendationsList');
+            recommendationsList.innerHTML = '';
+            if (data.recommendations) {
+                Object.entries(data.recommendations).forEach(([type, rec]) => {
+                    const item = document.createElement('div');
+                    item.className = 'recommendation-item';
+                    item.innerHTML = `<h5>${type}</h5><p>${rec}</p>`;
+                    recommendationsList.appendChild(item);
+                });
+            }
+
+            // Update next step button links
+            const filename = document.getElementById('fileSelect').value;
+            if (filename) {
+                document.getElementById('formRestoration').action = `/restoration-guide?file=${encodeURIComponent('degradation_' + filename)}`;
+            }
+        }
+
+        function downloadReport() {
+            const filename = document.getElementById('fileSelect').value;
+            if (filename) { window.location.href = `/api/download/report_${filename}.json`; }
+        }
+    </script>
+</body>
+
+</html>

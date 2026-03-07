@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guide de Restauration - ASL-3D</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+
+<body>
+    <div class="app-wrapper">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
+                <h1>ASL-3D</h1>
+                <p class="tagline">Restauration Numérique Intelligente de Bâtiments Historiques</p>
+            </div>
+            <nav class="sidebar-nav">
+                <span class="nav-label">Navigation</span>
+                <a href="/" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-house"></i></span><span>Accueil</span></a>
+                <a href="/scanner" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
+                <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-cube"></i></span><span>Reconstruction
+                        3D</span></a>
+                <a href="/analysis" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse</span></a>
+                <a href="/restoration-guide" class="nav-item active"><span class="nav-icon"><i
+                            class="ph-duotone ph-clipboard-text"></i></span><span>Guide de
+                        Restauration</span></a>
+            </nav>
+            <div class="sidebar-footer">© 2026 ASL-3D</div>
+        </aside>
+
+        <!-- MAIN -->
+        <div class="main-wrapper">
+            <main class="page-content">
+
+                <div class="page-header">
+                    <div class="breadcrumb"><i class="ph-fill ph-house" style="margin-right: 4px;"></i> Accueil
+                        <span>›</span> Guide de Restauration
+                    </div>
+                    <h2>Guide de Restauration</h2>
+                    <p>Générez et consultez un plan de restauration complet et personnalisé</p>
+                </div>
+
+                <!-- PLAN GENERATOR -->
+                <section class="restoration-section">
+                    <h2>Générer un Plan de Restauration</h2>
+                    <div style="max-width:480px;">
+                        <div class="option-group" style="margin-bottom:1rem;">
+                            <label for="degradationFile">Fichier d'analyse :</label>
+                            <select id="degradationFile" class="select-input">
+                                <option value="">-- Charger un fichier analysé --</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="generatePlan()"
+                            style="width:100%;justify-content:center;">
+                            <i class="ph-bold ph-clipboard-text" style="margin-right: 8px;"></i> Générer le Plan de
+                            Restauration
+                        </button>
+                    </div>
+
+                    <div class="plan-display" id="planSection" style="display: none; margin-top:2rem;">
+                        <h3><i class="ph-duotone ph-list-dashes" style="margin-right: 8px;"></i> Plan de Restauration
+                            Détaillé</h3>
+
+                        <div class="plan-summary">
+                            <div class="summary-card">
+                                <h4
+                                    style="color:var(--accent-2);font-size:0.85rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem;">
+                                    Résumé du Projet</h4>
+                                <div id="summaryInfo"></div>
+                            </div>
+                        </div>
+
+                        <div class="phases-timeline">
+                            <h4
+                                style="font-size:0.85rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem;">
+                                <i class="ph-duotone ph-clock" style="margin-right: 8px;"></i> Chronologie des Travaux
+                            </h4>
+                            <div id="timelineContent" class="timeline-content"></div>
+                        </div>
+
+                        <div class="phases-detail">
+                            <h4
+                                style="font-size:0.85rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem;">
+                                <i class="ph-duotone ph-wrench" style="margin-right: 8px;"></i> Détail des Phases
+                            </h4>
+                            <div id="phasesContent" class="phases-content"></div>
+                        </div>
+
+                        <div class="recommendations-section">
+                            <h4
+                                style="font-size:0.85rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem;">
+                                <i class="ph-duotone ph-lightbulb" style="margin-right: 8px;"></i> Recommandations et
+                                Précautions
+                            </h4>
+                            <div id="recommendationsContent" class="recommendations-content"></div>
+                        </div>
+
+                        <div class="safety-section">
+                            <h4
+                                style="font-size:0.85rem;color:var(--accent-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem;">
+                                <i class="ph-duotone ph-shield-check" style="margin-right: 8px;"></i> Mesures de
+                                Sécurité Obligatoires
+                            </h4>
+                            <div id="safetyContent" class="safety-content"></div>
+                        </div>
+
+                        <div class="monitoring-section">
+                            <h4 <i class="ph-duotone ph-chart-bar" style="margin-right: 8px;"></i> Plan de Suivi
+                                Post-Restauration</h4>
+                            <div id="monitoringContent" class="monitoring-content"></div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary" onclick="downloadPlan()"
+                                style="justify-content:center;"><i class="ph-bold ph-download-simple"
+                                    style="margin-right: 8px;"></i> Télécharger le Rapport
+                                PDF</button>
+                            <button class="btn btn-secondary" onclick="printPlan()" style="justify-content:center;"><i
+                                    class="ph-bold ph-printer" style="margin-right: 8px;"></i> Imprimer</button>
+                            <form action="/" method="get">
+                                <button type="submit" class="btn btn-primary" style="justify-content:center;"><i
+                                        class="ph-bold ph-house" style="margin-right: 8px;"></i> Retour à
+                                    l'Accueil</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- BEST PRACTICES -->
+                <section class="restoration-best-practices">
+                    <h3>Bonnes Pratiques de Restauration</h3>
+                    <div class="practices-grid">
+                        <div class="practice-card">
+                            <h4><i class="ph-duotone ph-magnifying-glass"
+                                    style="margin-right: 8px; color: var(--accent);"></i> Diagnostic Complet</h4>
+                            <p>Effectuez toujours un diagnostic complet avant de commencer les travaux. Documentez
+                                l'état initial avec photos.</p>
+                        </div>
+                        <div class="practice-card">
+                            <h4><i class="ph-duotone ph-clock" style="margin-right: 8px; color: var(--accent-2);"></i>
+                                Planification Minutieuse</h4>
+                            <p>Établissez un calendrier réaliste en tenant compte des conditions météorologiques et des
+                                délais matériaux.</p>
+                        </div>
+                        <div class="practice-card">
+                            <h4><i class="ph-duotone ph-hard-hat"
+                                    style="margin-right: 8px; color: var(--accent-3);"></i> Équipe Qualifiée</h4>
+                            <p>Engagez des restaurateurs spécialisés dans les bâtiments historiques. La qualification
+                                est essentielle.</p>
+                        </div>
+                        <div class="practice-card">
+                            <h4><i class="ph-duotone ph-flask" style="margin-right: 8px; color: var(--accent);"></i>
+                                Test des Matériaux</h4>
+                            <p>Testez tous les nouveaux matériaux sur des zones peu visibles avant l'application
+                                générale.</p>
+                        </div>
+                        <div class="practice-card">
+                            <h4><i class="ph-duotone ph-camera" style="margin-right: 8px; color: var(--accent-2);"></i>
+                                Documentation Continue</h4>
+                            <p>Photographiez chaque étape des travaux. Cela aide au suivi et crée une archive précieuse.
+                            </p>
+                        </div>
+                        <div class="practice-card">
+                            <h4><i class="ph-duotone ph-arrows-clockwise"
+                                    style="margin-right: 8px; color: var(--accent-3);"></i> Suivi Régulier</h4>
+                            <p>Inspectez les zones restaurées régulièrement pour détecter tout problème précoce.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TECHNICAL GUIDES -->
+                <section class="technical-guides">
+                    <h3>Guides Techniques par Type de Dégradation</h3>
+                    <div class="guide-sections">
+                        <div class="technical-guide">
+                            <h4><i class="ph-duotone ph-asterisk"
+                                    style="margin-right: 8px; color: var(--accent-3);"></i> Traitement des Fissures</h4>
+                            <h5>Étapes d'Intervention :</h5>
+                            <ol>
+                                <li><strong>Nettoyage :</strong> Enlever les débris avec air comprimé ou brosse douce
+                                </li>
+                                <li><strong>Préparation :</strong> Dépoussiérer complètement la fissure</li>
+                                <li><strong>Scellement :</strong> Appliquer un produit d'étanchéité compatible</li>
+                                <li><strong>Remplissage :</strong> Remplir avec mortier spécialisé adapté au matériau
+                                </li>
+                                <li><strong>Finition :</strong> Lisser et finir à hauteur du reste</li>
+                                <li><strong>Protection :</strong> Appliquer un vernis de protection après séchage</li>
+                            </ol>
+                            <h5>Matériaux Recommandés :</h5>
+                            <p>Mortier hydrophobe, scellant acrylique, ciment blanc, peinture acrylique</p>
+                            <h5>Délai de Séchage :</h5>
+                            <p>24–48 heures selon produit et conditions climatiques</p>
+                        </div>
+
+                        <div class="technical-guide">
+                            <h4><i class="ph-duotone ph-drop"
+                                    style="margin-right: 8px; color: var(--accent-primary);"></i> Traitement de
+                                l'Humidité</h4>
+                            <h5>Diagnostic de Source :</h5>
+                            <ul>
+                                <li>Identifier si c'est une infiltration ou humidité ascensionnelle</li>
+                                <li>Localiser les points d'entrée d'eau</li>
+                                <li>Évaluer la profondeur de la pénétration</li>
+                            </ul>
+                            <h5>Solutions Courantes :</h5>
+                            <ol>
+                                <li>Installation de membrane imperméabilisante</li>
+                                <li>Amélioration de la ventilation et du drainage</li>
+                                <li>Application de revêtement hydrophobe</li>
+                                <li>Traitement des zones affectées</li>
+                            </ol>
+                            <h5>Prévention :</h5>
+                            <p>Inspection annuelle, nettoyage des gouttières, entretien du drainage</p>
+                        </div>
+
+                        <div class="technical-guide">
+                            <h4><i class="ph-duotone ph-wind" style="margin-right: 8px; color: var(--accent-2);"></i>
+                                Traitement de l'Érosion</h4>
+                            <h5>Évaluation :</h5>
+                            <p>Mesurer la profondeur d'érosion et identifier les zones critiques</p>
+                            <h5>Processus :</h5>
+                            <ol>
+                                <li>Nettoyage en douceur de la surface</li>
+                                <li>Application de consolidant de pierre</li>
+                                <li>Retraitement ou reprise de la surface</li>
+                                <li>Application de revêtement protecteur</li>
+                            </ol>
+                            <h5>Maintenance :</h5>
+                            <p>Retraitement du revêtement tous les 5–7 ans</p>
+                        </div>
+
+                        <div class="technical-guide">
+                            <h4><i class="ph-duotone ph-plant" style="margin-right: 8px; color: var(--accent-3);"></i>
+                                Traitement des Champignons/Moisissures</h4>
+                            <h5>Actions Immédiates :</h5>
+                            <ul>
+                                <li>Isoler la zone contaminée</li>
+                                <li>Identifier le type de champignon/moisissure</li>
+                                <li>Évaluer l'humidité ambiante</li>
+                            </ul>
+                            <h5>Traitement :</h5>
+                            <ol>
+                                <li>Nettoyage biocide professionnel</li>
+                                <li>Application d'anti-fongique spécialisé</li>
+                                <li>Amélioration de la ventilation</li>
+                                <li>Contrôle de l'humidité</li>
+                                <li>Suivi régulier (mensuel pendant 3 mois)</li>
+                            </ol>
+                            <h5>Équipement de Protection :</h5>
+                            <p>Masque N95, gants nitrile, vêtements protecteurs, ventilation forcée</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- COSTS -->
+                <section class="costs-timeline">
+                    <h3>Estimation Coûts et Délais</h3>
+                    <div class="estimation-grid">
+                        <div class="estimation-card">
+                            <h4><i class="ph-duotone ph-asterisk" style="margin-right:8px;color:var(--accent-3);"></i>
+                                Fissures Structurelles</h4>
+                            <p><strong>Délai :</strong> 3–5 jours</p>
+                            <p><strong>Coût (m²) :</strong> 150–300€</p>
+                        </div>
+                        <div class="estimation-card">
+                            <h4><i class="ph-duotone ph-drop" style="margin-right:8px;color:var(--accent-primary);"></i>
+                                Humidité</h4>
+                            <p><strong>Délai :</strong> 1–2 semaines</p>
+                            <p><strong>Coût (m²) :</strong> 300–500€</p>
+                        </div>
+                        <div class="estimation-card">
+                            <h4><i class="ph-duotone ph-wind" style="margin-right:8px;color:var(--accent-2);"></i>
+                                Érosion</h4>
+                            <p><strong>Délai :</strong> 4–7 jours</p>
+                            <p><strong>Coût (m²) :</strong> 200–350€</p>
+                        </div>
+                        <div class="estimation-card">
+                            <h4><i class="ph-duotone ph-plant" style="margin-right:8px;color:var(--accent-3);"></i>
+                                Champignons</h4>
+                            <p><strong>Délai :</strong> 2–3 semaines</p>
+                            <p><strong>Coût (m²) :</strong> 250–400€</p>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <footer class="footer">
+                <div class="footer-content">
+                    <p>&copy; 2026 ASL-3D - Restauration de Patrimoine Historique</p>
+                    <p class="creator-credit">Créée avec <i class="ph-fill ph-heart" style="color:var(--accent-3);"></i>
+                        par AAMYMI Chaimae</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', loadAnalysisFiles);
+
+        function loadAnalysisFiles() {
+            fetch('/api/files?type=outputs').then(r => r.json()).then(data => {
+                const select = document.getElementById('degradationFile');
+                select.innerHTML = '<option value="">-- Charger un fichier analysé --</option>';
+                data.files.forEach(file => {
+                    if (file.startsWith('degradation_')) {
+                        const opt = document.createElement('option');
+                        opt.value = file; opt.textContent = file;
+                        select.appendChild(opt);
+                    }
+                });
+
+                // Auto-select file from URL if present
+                const urlParams = new URLSearchParams(window.location.search);
+                const fileParam = urlParams.get('file');
+                if (fileParam && data.files.includes(fileParam)) {
+                    select.value = fileParam;
+                    select.dispatchEvent(new Event('change'));
+                    generatePlan();
+                }
+            }).catch(e => console.error('Erreur:', e));
+        }
+
+        function generatePlan() {
+            const filename = document.getElementById('degradationFile').value;
+            if (!filename) { alert('Veuillez sélectionner un fichier d\'analyse'); return; }
+
+            const originalFilename = filename.startsWith('degradation_') ? filename.substring(12) : filename;
+
+            document.getElementById('planSection').style.display = 'block';
+            document.getElementById('timelineContent').innerHTML = '<p>Analyse de l\'image en cours...</p>';
+            document.getElementById('phasesContent').innerHTML = '';
+            document.getElementById('summaryInfo').innerHTML = '';
+
+            fetch(`/api/detect-degradation/${originalFilename}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
+
+                    return fetch(`/api/restoration-plan/${originalFilename}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ degradations: data.degradations || [] })
+                    });
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
+                    displayPlan(data.plan);
+                    window.currentPlanReport = data.report;
+                })
+                .catch(error => {
+                    alert('Erreur: ' + error.message);
+                    document.getElementById('planSection').style.display = 'none';
+                });
+        }
+
+        function displayPlan(plan) {
+            document.getElementById('summaryInfo').innerHTML = `
+            <p><strong>Total des problèmes :</strong> ${plan.summary.total_issues}</p>
+            <p><strong>Types de dégradations :</strong> ${plan.summary.degradation_types.join(', ')}</p>
+            <p><strong>Durée estimée :</strong> ${plan.summary.estimated_duration}</p>
+            <p><strong>Facteur de coût :</strong> ${plan.summary.estimated_cost_factor}x</p>`;
+
+            document.getElementById('timelineContent').innerHTML = plan.phases.map(p => `
+            <div class="timeline-item">
+                <div class="timeline-marker">Phase ${p.phase}</div>
+                <div class="timeline-content"><strong>${p.type}</strong> — Durée : ${p.duration}</div>
+            </div>`).join('');
+
+            document.getElementById('phasesContent').innerHTML = plan.phases.map(p => `
+            <div class="phase-detail">
+                <h5>Phase ${p.phase} : ${p.type}</h5>
+                <p><strong>Zones affectées :</strong> ${p.affected_areas}</p>
+                <p><strong>Durée :</strong> ${p.duration}</p>
+                <ol>${p.steps.map(s => `<li>${s}</li>`).join('')}</ol>
+                <p><strong>Résultat attendu :</strong> ${p.expected_outcome}</p>
+            </div>`).join('');
+
+            document.getElementById('recommendationsContent').innerHTML = `<ul>${plan.phases.flatMap(p => p.precautions).map(pr => `<li>${pr}</li>`).join('')}</ul>`;
+            document.getElementById('safetyContent').innerHTML = `<ul>${plan.safety_measures.map(m => `<li>${m}</li>`).join('')}</ul>`;
+            document.getElementById('monitoringContent').innerHTML = `
+            <p><strong>Fréquence :</strong> ${plan.monitoring_plan.frequency}</p>
+            <ul>${plan.monitoring_plan.checklist.map(i => `<li>${i}</li>`).join('')}</ul>
+            <p><strong>Maintenance :</strong> ${plan.monitoring_plan.maintenance}</p>`;
+
+            document.getElementById('planSection').style.display = 'block';
+            document.getElementById('planSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function downloadPlan() {
+            if (window.currentPlanReport) {
+                window.location.href = `/api/download/${window.currentPlanReport}`;
+            } else {
+                alert('Aucun rapport n\'est encore généré. Veuillez d\'abord générer le plan.');
+            }
+        }
+        function printPlan() { window.print(); }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASL-3D - Restauration Numérique de Bâtiments Historiques</title>
+    <meta name="description"
+        content="Scannez, analysez et reconstruisez numériquement vos bâtiments historiques avec l'IA.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+
+<body>
+    <div class="app-wrapper">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
+                <h1>ASL-3D</h1>
+                <p class="tagline">Restauration Numérique Intelligente de Bâtiments Historiques</p>
+            </div>
+            <nav class="sidebar-nav">
+                <span class="nav-label">Navigation</span>
+                <a href="/" class="nav-item active">
+                    <span class="nav-icon"><i class="ph-duotone ph-house"></i></span>
+                    <span>Accueil</span>
+                </a>
+                <a href="/scanner" class="nav-item">
+                    <span class="nav-icon"><i class="ph-duotone ph-camera"></i></span>
+                    <span>Scanner</span>
+                </a>
+                <a href="/reconstruction" class="nav-item">
+                    <span class="nav-icon"><i class="ph-duotone ph-cube"></i></span>
+                    <span>Reconstruction 3D</span>
+                </a>
+                <a href="/analysis" class="nav-item">
+                    <span class="nav-icon"><i class="ph-duotone ph-magnifying-glass"></i></span>
+                    <span>Analyse</span>
+                </a>
+                <a href="/restoration-guide" class="nav-item">
+                    <span class="nav-icon"><i class="ph-duotone ph-clipboard-text"></i></span>
+                    <span>Guide de Restauration</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                © 2026 ASL-3D
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <div class="main-wrapper">
+            <main class="page-content">
+
+                <!-- HERO -->
+                <section class="hero">
+                    <div class="hero-badge"><i class="ph-fill ph-sparkle"></i> Intelligence Artificielle · Patrimoine
+                        Historique</div>
+                    <div class="hero-content">
+                        <h2>Préservez l'Histoire avec l'Intelligence Artificielle</h2>
+                        <p>Scannez, analysez et reconstruisez numériquement vos bâtiments historiques avec précision et
+                            rapidité.</p>
+                        <div class="cta-buttons">
+                            <form action="/scanner" method="get">
+                                <button type="submit" class="btn btn-primary"><i class="ph-bold ph-camera"></i>
+                                    Commencer le Scan</button>
+                            </form>
+                            <form action="/analysis" method="get">
+                                <button type="submit" class="btn btn-secondary"><i
+                                        class="ph-bold ph-magnifying-glass"></i> Analyser Dégradations</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- FEATURES -->
+                <section class="features">
+                    <h3>Nos Capacités</h3>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="ph-duotone ph-camera"></i></div>
+                            <h4>Scan Intelligent</h4>
+                            <p>Convertissez des photos 2D en modèles 3D précis grâce à notre IA</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="ph-duotone ph-magnifying-glass"></i></div>
+                            <h4>Détection IA</h4>
+                            <p>Identifiez automatiquement fissures, humidité et dégradations</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="ph-duotone ph-cube"></i></div>
+                            <h4>Reconstruction 3D</h4>
+                            <p>Créez des modèles 3D détaillés pour la visualisation et l'analyse</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="ph-duotone ph-clipboard-text"></i></div>
+                            <h4>Plan de Restauration</h4>
+                            <p>Générez des guides complets de restauration personnalisés</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- WORKFLOW -->
+                <section class="workflow">
+                    <h3>Flux de Travail</h3>
+                    <div class="workflow-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <h4>Capturer</h4>
+                            <p>Photographiez le bâtiment sous tous les angles</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <h4>Analyser</h4>
+                            <p>Détection automatique des dégradations</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <h4>Reconstruire</h4>
+                            <p>Créer un modèle 3D fidèle</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <h4>Planifier</h4>
+                            <p>Plan de restauration détaillé</p>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">5</div>
+                            <h4>Restaurer</h4>
+                            <p>Exécuter les travaux guidés</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- DEGRADATION TYPES -->
+                <section class="degradation-types">
+                    <h3>Types de Dégradations Détectables</h3>
+                    <div class="degradation-grid">
+                        <div class="degradation-item">
+                            <div class="deg-icon" style="color: var(--accent-3);"><i class="ph-duotone ph-asterisk"></i>
+                            </div>
+                            <h5>Fissures</h5>
+                            <p>Fissures structurelles et superficielles</p>
+                        </div>
+                        <div class="degradation-item">
+                            <div class="deg-icon" style="color: var(--accent-primary);"><i
+                                    class="ph-duotone ph-drop"></i></div>
+                            <h5>Humidité</h5>
+                            <p>Infiltrations et humidité ascensionnelle</p>
+                        </div>
+                        <div class="degradation-item">
+                            <div class="deg-icon" style="color: var(--accent-2);"><i class="ph-duotone ph-wind"></i>
+                            </div>
+                            <h5>Érosion</h5>
+                            <p>Usure et dégâts climatiques</p>
+                        </div>
+                        <div class="degradation-item">
+                            <div class="deg-icon" style="color: var(--accent-3);"><i class="ph-duotone ph-plant"></i>
+                            </div>
+                            <h5>Champignons</h5>
+                            <p>Moisissures et infestations biologiques</p>
+                        </div>
+                        <div class="degradation-item">
+                            <div class="deg-icon" style="color: #ffd166;"><i class="ph-duotone ph-palette"></i></div>
+                            <h5>Décoloration</h5>
+                            <p>Perte de couleur et patine</p>
+                        </div>
+                        <div class="degradation-item">
+                            <div class="deg-icon" style="color: #ff9f1c;"><i class="ph-duotone ph-hammer"></i></div>
+                            <h5>Effritement</h5>
+                            <p>Désagrégation des matériaux</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- INFO HOW IT WORKS -->
+                <section class="info-section">
+                    <h3>Comment ça Marche</h3>
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <h4>1. Préparation</h4>
+                            <p>Prenez des photos de haute qualité du bâtiment sous différents angles et conditions
+                                d'éclairage.</p>
+                        </div>
+                        <div class="info-card">
+                            <h4>2. Upload</h4>
+                            <p>Téléchargez vos images dans le système. Nos serveurs vont traiter les données.</p>
+                        </div>
+                        <div class="info-card">
+                            <h4>3. Analyse IA</h4>
+                            <p>L'IA analyse automatiquement les images pour détecter tous les types de dégradations.</p>
+                        </div>
+                        <div class="info-card">
+                            <h4>4. Reconstruction</h4>
+                            <p>Un modèle 3D précis est créé à partir des données analysées.</p>
+                        </div>
+                        <div class="info-card">
+                            <h4>5. Rapport</h4>
+                            <p>Recevez un rapport complet avec plan de restauration et estimations.</p>
+                        </div>
+                        <div class="info-card">
+                            <h4>6. Intervention</h4>
+                            <p>Suivez le guide pour restaurer votre bâtiment étape par étape.</p>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <footer class="footer">
+                <div class="footer-content">
+                    <p>&copy; 2026 ASL-3D - Restauration de Patrimoine Historique</p>
+                    <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
+                </div>
+            </footer>
+        </div>
+
+    </div>
+</body>
+
+</html>

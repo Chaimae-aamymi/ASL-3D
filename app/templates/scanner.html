@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner 3D - ASL-3D</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+
+<body>
+    <div class="app-wrapper">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
+                <h1>ASL-3D</h1>
+                <p class="tagline">Restauration Numérique Intelligente de Bâtiments Historiques</p>
+            </div>
+            <nav class="sidebar-nav">
+                <span class="nav-label">Navigation</span>
+                <a href="/" class="nav-item">
+                    <span class="nav-icon"><i class="ph-duotone ph-house"></i></span>
+                    <span>Accueil</span>
+                </a>
+                <a href="/scanner" class="nav-item active">
+                    <span class="nav-icon"><i class="ph-duotone ph-camera"></i></span>
+                    <span>Scanner</span>
+                </a>
+                <a href="/reconstruction" class="nav-item">
+                    <span class="nav-icon"><i class="ph-duotone ph-cube"></i></span>
+                    <span>Reconstruction 3D</span>
+                </a>
+                <a href="/analysis" class="nav-item">
+                    <span class="nav-icon"><i class="ph-duotone ph-magnifying-glass"></i></span>
+                    <span>Analyse</span>
+                </a>
+                <a href="/restoration-guide" class="nav-item">
+                    <span class="nav-icon"><i class="ph-duotone ph-clipboard-text"></i></span>
+                    <span>Guide de Restauration</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">© 2026 ASL-3D</div>
+        </aside>
+
+        <!-- MAIN -->
+        <div class="main-wrapper">
+            <main class="page-content">
+
+                <div class="page-header">
+                    <div class="breadcrumb"><i class="ph-fill ph-house" style="margin-right: 4px;"></i> Accueil
+                        <span>›</span> Scanner
+                    </div>
+                    <h2>Scanner 3D</h2>
+                    <p>Convertissez vos images en données exploitables par l'IA</p>
+                </div>
+
+                <section class="scanner-section">
+                    <h2>Télécharger une Image</h2>
+                    <div class="scanner-container">
+                        <div class="upload-area">
+                            <h3><i class="ph-duotone ph-folder-open" style="margin-right: 8px;"></i>Sélectionner un
+                                fichier</h3>
+                            <form id="uploadForm" method="POST" action="/api/upload" enctype="multipart/form-data">
+                                <div class="file-input-wrapper">
+                                    <input type="file" id="fileInput" name="file" accept="image/*" required>
+                                    <label for="fileInput" class="file-label">
+                                        <span class="upload-icon"><i class="ph-duotone ph-upload-simple"
+                                                style="font-size: 2.5rem; color: var(--accent);"></i></span>
+                                        <span class="upload-text">Cliquez pour sélectionner</span>
+                                        <span class="upload-hint">ou glissez-déposez ici · JPG, PNG, BMP</span>
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary" id="uploadBtn"
+                                    style="width:100%; justify-content: center;">
+                                    <i class="ph-bold ph-upload-simple" style="margin-right: 8px;"></i> Télécharger et
+                                    Scanner
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="preview-area">
+                            <h3><i class="ph-duotone ph-image" style="margin-right: 8px;"></i> Aperçu de l'image</h3>
+                            <div id="previewContainer" class="preview-container">
+                                <p class="placeholder">Aucune image sélectionnée</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="scanning-options">
+                        <h3><i class="ph-fill ph-sliders-horizontal" style="margin-right: 8px;"></i> Options de Scan
+                        </h3>
+                        <div class="options-grid">
+                            <div class="option-group">
+                                <label for="quality">Qualité de Scan</label>
+                                <select id="quality">
+                                    <option value="low">Basse (rapide)</option>
+                                    <option value="medium" selected>Moyenne</option>
+                                    <option value="high">Haute (détaillée)</option>
+                                </select>
+                            </div>
+                            <div class="option-group">
+                                <label for="scale">Échelle</label>
+                                <input type="number" id="scale" value="1.0" step="0.1" min="0.1" max="5.0">
+                            </div>
+                            <div class="option-group">
+                                <label for="smoothness">Lissage</label>
+                                <input type="number" id="smoothness" value="2" step="0.5" min="0.5" max="5.0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="status-area" id="statusArea" style="display: none;">
+                        <h3><i class="ph-duotone ph-hourglass-high" style="margin-right: 8px;"></i> Progression</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <p id="statusText">Préparation...</p>
+                    </div>
+
+                    <div class="results-area" id="resultsArea" style="display: none;">
+                        <h3><i class="ph-fill ph-check-circle" style="color:var(--accent-2); margin-right: 8px;"></i>
+                            Résultats du Scan</h3>
+                        <div class="results-grid">
+                            <div class="result-item">
+                                <h4>Fichier Traité</h4>
+                                <p id="processedFile">-</p>
+                            </div>
+                            <div class="result-item">
+                                <h4>Résolution</h4>
+                                <p id="resolution">-</p>
+                            </div>
+                            <div class="result-item">
+                                <h4>Mailles 3D</h4>
+                                <p id="meshInfo">-</p>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <form id="formAnalysis" action="/analysis" method="get">
+                                <button type="submit" class="btn btn-secondary" style="justify-content:center;"><i
+                                        class="ph-bold ph-magnifying-glass" style="margin-right:8px;"></i> Analyser les
+                                    Dégradations</button>
+                            </form>
+                            <form id="formReconstruction" action="/reconstruction" method="get">
+                                <button type="submit" class="btn btn-primary" style="justify-content:center;"><i
+                                        class="ph-bold ph-cube" style="margin-right:8px;"></i> Reconstruire 3D</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="tips-section">
+                    <h3><i class="ph-duotone ph-lightbulb" style="color:var(--accent-primary); margin-right:8px;"></i>
+                        Conseils pour un Bon Scan</h3>
+                    <ul class="tips-list">
+                        <li><strong>Éclairage :</strong> Utilisez une lumière naturelle uniforme, évitez les ombres
+                            fortes</li>
+                        <li><strong>Angle :</strong> Prenez des photos de face, légèrement en biais pour capter la
+                            profondeur</li>
+                        <li><strong>Distance :</strong> Gardez une distance suffisante pour capturer tout l'élément à
+                            scanner</li>
+                        <li><strong>Nettoyage :</strong> Assurez-vous que la surface soit visible et sans obstruction
+                        </li>
+                        <li><strong>Résolution :</strong> Utilisez les plus hautes résolutions disponibles sur votre
+                            appareil</li>
+                        <li><strong>Stabilité :</strong> Maintenez l'appareil stable, utilisez un trépied si possible
+                        </li>
+                    </ul>
+                </section>
+
+            </main>
+
+            <footer class="footer">
+                <div class="footer-content">
+                    <p>&copy; 2026 ASL-3D - Restauration de Patrimoine Historique</p>
+                    <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const uploadForm = document.getElementById('uploadForm');
+        const statusArea = document.getElementById('statusArea');
+        const resultsArea = document.getElementById('resultsArea');
+
+        fileInput.addEventListener('change', function (e) {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    previewContainer.innerHTML = `<img src="${event.target.result}" alt="Preview" style="max-width:100%;max-height:380px;border-radius:10px;">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        uploadForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            statusArea.style.display = 'block';
+            resultsArea.style.display = 'none';
+            const progressFill = document.getElementById('progressFill');
+            const statusText = document.getElementById('statusText');
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += Math.random() * 20;
+                    progressFill.style.width = Math.min(progress, 90) + '%';
+                }
+            }, 300);
+
+            fetch('/api/upload', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    clearInterval(progressInterval);
+                    progressFill.style.width = '100%';
+                    statusText.textContent = 'Scan complété !';
+                    setTimeout(() => {
+                        resultsArea.style.display = 'block';
+                        document.getElementById('processedFile').textContent = data.filename;
+                        document.getElementById('resolution').textContent = 'Haute résolution';
+                        document.getElementById('meshInfo').textContent = 'Mailles générées';
+
+                        document.getElementById('formAnalysis').action = `/analysis?file=${encodeURIComponent(data.filename)}`;
+                        document.getElementById('formReconstruction').action = `/reconstruction?file=${encodeURIComponent(data.filename)}`;
+                    }, 500);
+                })
+                .catch(error => {
+                    clearInterval(progressInterval);
+                    statusText.textContent = 'Erreur : ' + error;
+                });
+        });
+
+        // Drag & drop
+        previewContainer.addEventListener('dragover', e => { e.preventDefault(); previewContainer.style.opacity = '0.7'; });
+        previewContainer.addEventListener('dragleave', () => { previewContainer.style.opacity = '1'; });
+        previewContainer.addEventListener('drop', e => {
+            e.preventDefault();
+            previewContainer.style.opacity = '1';
+            const files = e.dataTransfer.files;
+            if (files.length > 0) { fileInput.files = files; fileInput.dispatchEvent(new Event('change')); }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,498 @@
+================================================================================
+GUIDE D'ENTRAÎNEMENT - Modèles Deep Learning ASL-3D
+================================================================================
+
+Vue d'ensemble: Comment entraîner les modèles CNN sur vos propres données
+
+================================================================================
+PRÉREQUIS
+================================================================================
+
+1. Données d'entraînement:
+   - Images de bâtiments historiques (224x224 pour classification)
+   - Masques de segmentation (256x256) pour segmentation
+   - Minimum 100-500 images par classe (idéalement 1000+)
+
+2. Environnement:
+   - Python 3.8+
+   - TensorFlow 2.13.0 + Keras
+   - GPU recommandé (NVIDIA avec CUDA/cuDNN)
+   - Minimum 8GB RAM (16GB recommandé pour GPU)
+
+3. Bibliothèques:
+   pip install tensorflow keras numpy pillow opencv-python
+
+
+================================================================================
+ÉTAPE 1: PRÉPARER LES DONNÉES D'ENTRAÎNEMENT
+================================================================================
+
+Structure de répertoire recommandée:
+
+data/
+├── classification/
+│   ├── fissures/
+│   │   ├── image_001.jpg
+│   │   ├── image_002.jpg
+│   │   └── ...
+│   ├── humidite/
+│   ├── erosion/
+│   ├── champignons/
+│   ├── decoloration/
+│   └── effritement/
+└── segmentation/
+    ├── images/
+    │   ├── image_001.jpg
+    │   └── ...
+    └── masks/
+        ├── image_001_mask.png
+        └── ...
+
+
+Code de chargement:
+
+```python
+import os
+import numpy as np
+from PIL import Image
+from sklearn.preprocessing import LabelBinarizer
+import cv2
+
+def load_classification_data(data_dir, img_size=224):
+    """Charger données de classification"""
+    images = []
+    labels = []
+    class_names = os.listdir(data_dir)
+    
+    for label_idx, class_name in enumerate(class_names):
+        class_dir = os.path.join(data_dir, class_name)
+        for img_name in os.listdir(class_dir):
+            img_path = os.path.join(class_dir, img_name)
+            img = Image.open(img_path).convert('RGB')
+            img = img.resize((img_size, img_size))
+            img_array = np.array(img)
+            
+            images.append(img_array)
+            labels.append(label_idx)
+    
+    X = np.array(images, dtype='float32') / 255.0
+    y = np.array(labels)
+    
+    # One-hot encoding
+    lb = LabelBinarizer()
+    y_encoded = lb.fit_transform(y)
+    
+    return X, y_encoded, class_names
+
+def load_segmentation_data(img_dir, mask_dir, img_size=256):
+    """Charger données de segmentation"""
+    images = []
+    masks = []
+    
+    for img_name in os.listdir(img_dir):
+        img_path = os.path.join(img_dir, img_name)
+        mask_path = os.path.join(mask_dir, img_name.replace('.jpg', '_mask.png'))
+        
+        img = Image.open(img_path).convert('RGB')
+        img = img.resize((img_size, img_size))
+        img_array = np.array(img, dtype='float32') / 255.0
+        
+        mask = Image.open(mask_path).convert('L')
+        mask = mask.resize((img_size, img_size))
+        mask_array = np.array(mask, dtype='float32') / 255.0
+        mask_array = np.expand_dims(mask_array, axis=-1)
+        
+        images.append(img_array)
+        masks.append(mask_array)
+    
+    X = np.array(images)
+    y = np.array(masks)
+    
+    return X, y
+
+# Utiliser
+X_train, y_train, class_names = load_classification_data('data/classification/')
+X_seg, y_seg = load_segmentation_data('data/segmentation/images/', 
+                                      'data/segmentation/masks/')
+```
+
+
+================================================================================
+ÉTAPE 2: ENTRAÎNER LE MODÈLE DE CLASSIFICATION
+================================================================================
+
+```python
+from degradation_detector import DegradationDetector
+from sklearn.model_selection import train_test_split
+
+# Charger les données
+X, y, class_names = load_classification_data('data/classification/')
+
+# Division train/validation
+X_train, X_val, y_train, y_val = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Créer le détecteur
+detector = DegradationDetector()
+
+# Entraîner
+detector.train_models(
+    X_train, y_train,
+    epochs=50,
+    batch_size=32
+)
+
+# Évaluer sur données de validation
+val_loss, val_acc = detector.model.evaluate(X_val, y_val)
+print(f"Validation Accuracy: {val_acc:.4f}")
+
+# Sauvegarder les modèles entraînés
+detector.save_models('models/')
+```
+
+Hyperparamètres suggérés:
+- Epochs: 50-100 (selon taille données)
+- Batch size: 32 (GPU) ou 16 (CPU)
+- Learning rate: 1e-4 (déjà configuré)
+- Validation split: 20%
+- Early stopping: 10 epochs sans amélioration
+
+
+================================================================================
+ÉTAPE 3: ENTRAÎNER LE MODÈLE DE SEGMENTATION
+================================================================================
+
+Note: Actuellement U-Net est disponible mais nécessite implémentation 
+d'entraînement séparé. Code à ajouter:
+
+```python
+from degradation_detector import DegradationDetector
+from sklearn.model_selection import train_test_split
+
+# Charger les données
+X, y = load_segmentation_data(
+    'data/segmentation/images/',
+    'data/segmentation/masks/'
+)
+
+# Division
+X_train, X_val, y_train, y_val = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Créer et entraîner
+detector = DegradationDetector()
+
+detector.segmentation_model.fit(
+    X_train, y_train,
+    validation_data=(X_val, y_val),
+    epochs=50,
+    batch_size=16,
+    callbacks=[
+        keras.callbacks.EarlyStopping(
+            monitor='val_loss',
+            patience=10,
+            restore_best_weights=True
+        ),
+        keras.callbacks.ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.5,
+            patience=5,
+            min_lr=1e-6
+        )
+    ]
+)
+
+# Évaluer
+val_loss, val_acc = detector.segmentation_model.evaluate(X_val, y_val)
+print(f"Segmentation Val Loss: {val_loss:.4f}, Acc: {val_acc:.4f}")
+
+# Sauvegarder
+detector.save_models('models/')
+```
+
+
+================================================================================
+ÉTAPE 4: DATA AUGMENTATION (IMPORTANT!)
+================================================================================
+
+Augmenter artificiellement les données pour meilleure généralisation:
+
+```python
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+# Augmentation pour classification
+train_datagen = ImageDataGenerator(
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    horizontal_flip=True,
+    vertical_flip=True,
+    zoom_range=0.2,
+    shear_range=0.15,
+    fill_mode='nearest',
+    brightness_range=[0.8, 1.2]
+)
+
+# Augmentation pour segmentation
+train_aug = ImageDataGenerator(
+    rotation_range=15,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    horizontal_flip=True,
+    zoom_range=0.15
+)
+
+# Appliquer l'augmentation
+train_generator = train_datagen.flow(
+    X_train, y_train,
+    batch_size=32,
+    seed=42
+)
+
+# Entraîner avec générateur
+detector.model.fit(
+    train_generator,
+    steps_per_epoch=len(X_train) // 32,
+    epochs=100,
+    validation_data=(X_val, y_val)
+)
+```
+
+
+================================================================================
+ÉTAPE 5: VALIDATION ET ÉVALUATION
+================================================================================
+
+```python
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+
+# Prédictions
+y_pred = detector.model.predict(X_val)
+y_pred_classes = np.argmax(y_pred, axis=1)
+y_val_classes = np.argmax(y_val, axis=1)
+
+# Rapport de classification
+print(classification_report(y_val_classes, y_pred_classes))
+
+# Matrice de confusion
+cm = confusion_matrix(y_val_classes, y_pred_classes)
+print("Confusion Matrix:")
+print(cm)
+
+# Visualiser
+plt.imshow(cm, cmap='Blues')
+plt.title('Confusion Matrix')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.savefig('confusion_matrix.png')
+plt.show()
+
+# Accuracy par classe
+class_accuracy = cm.diagonal() / cm.sum(axis=1)
+for i, acc in enumerate(class_accuracy):
+    print(f"Class {class_names[i]}: {acc:.4f}")
+```
+
+
+================================================================================
+ÉTAPE 6: TEST SUR IMAGES RÉELLES
+================================================================================
+
+```python
+import cv2
+from degradation_detector import DegradationDetector
+
+# Charger le modèle entraîné
+detector = DegradationDetector()
+detector.load_models('models/')
+
+# Charger image de test
+test_image = cv2.imread('test_building.jpg')
+test_image_rgb = cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)
+
+# Détecter
+degradations = detector.detect(test_image_rgb)
+
+# Afficher résultats
+print(f"Dégradations détectées: {len(degradations)}")
+for deg in degradations:
+    print(f"  - {deg['type']}: {deg['confidence']:.2%}")
+
+# Visualiser
+viz = detector.visualize(test_image_rgb, degradations)
+cv2.imshow('Detections', cv2.cvtColor(viz, cv2.COLOR_RGB2BGR))
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+```
+
+
+================================================================================
+ÉTAPE 7: MONITORING DE L'ENTRAÎNEMENT
+================================================================================
+
+Utiliser TensorBoard pour visualiser l'entraînement:
+
+```python
+import tensorflow as tf
+
+# Callbacks
+callbacks = [
+    tf.keras.callbacks.TensorBoard(
+        log_dir='logs/',
+        histogram_freq=1,
+        update_freq='epoch'
+    ),
+    tf.keras.callbacks.EarlyStopping(
+        monitor='val_loss',
+        patience=15,
+        restore_best_weights=True,
+        verbose=1
+    ),
+    tf.keras.callbacks.ModelCheckpoint(
+        'models/best_model.h5',
+        monitor='val_accuracy',
+        save_best_only=True,
+        mode='max'
+    )
+]
+
+# Entraîner avec callbacks
+detector.model.fit(
+    X_train, y_train,
+    validation_data=(X_val, y_val),
+    epochs=100,
+    batch_size=32,
+    callbacks=callbacks,
+    verbose=1
+)
+
+# Lancer TensorBoard
+# $ tensorboard --logdir=logs/
+```
+
+
+================================================================================
+ÉTAPE 8: FINE-TUNING AVANCÉ
+================================================================================
+
+Débloquer certaines couches de MobileNetV2 pour fine-tuning:
+
+```python
+# Débloquer les dernières couches
+detector.model.layers[2].trainable = True  # Débloquer base model
+
+# Compiler avec learning rate plus petit
+detector.model.compile(
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Entraîner de nouveau
+detector.model.fit(
+    X_train, y_train,
+    validation_data=(X_val, y_val),
+    epochs=50,
+    batch_size=16  # Batch size plus petit avec LR faible
+)
+```
+
+
+================================================================================
+ÉTAPE 9: EXPORT ET DÉPLOIEMENT
+================================================================================
+
+Sauvegarder et déployer les modèles:
+
+```python
+# Sauvegarder en formats différents
+detector.save_models('models/')  # Format Keras H5
+
+# Exporter en SavedModel (TensorFlow)
+detector.model.save('models/degradation_classifier_savedmodel')
+
+# Optionnel: Quantization pour mobile
+converter = tf.lite.TFLiteConverter.from_keras_model(detector.model)
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+tflite_model = converter.convert()
+
+with open('models/degradation_classifier.tflite', 'wb') as f:
+    f.write(tflite_model)
+```
+
+
+================================================================================
+CONSEILS ET BONNES PRATIQUES
+================================================================================
+
+✓ Données:
+  - Utiliser images de haute qualité (min 256x256)
+  - Équilibrer les classes (même nombre d'images par classe)
+  - Augmenter les données régulièrement
+  - Valider l'étiquetage manuel des données
+
+✓ Entraînement:
+  - Commencer avec transfer learning (plus rapide)
+  - Monitorer avec TensorBoard en temps réel
+  - Utiliser early stopping pour éviter overfitting
+  - Faire validation croisée (5-fold)
+
+✓ Modèles:
+  - Sauvegarder régulièrement les checkpoints
+  - Comparer performance train/val
+  - Tester sur données complètement séparées
+  - Documenter hyperparamètres utilisés
+
+✓ Production:
+  - Quantizer pour déploiement mobile
+  - Tester sur architectures cibles (CPU/GPU/Mobile)
+  - Avoir plan de fallback (filtres traditionnels)
+  - Monitorer performance en production
+
+
+================================================================================
+RÉSOLUTION DE PROBLÈMES
+================================================================================
+
+Problème: Out of Memory
+  → Réduire batch size
+  → Utiliser gradient accumulation
+  → Réduire résolution images
+
+Problème: Overfitting (écart train/val)
+  → Augmenter dropout
+  → Augmentation de données
+  → Réduire complexité modèle
+  → Réduire epochs
+
+Problème: Convergence lente
+  → Augmenter learning rate
+  → Vérifier normalization des données
+  → Utiliser better optimizers (AdamW)
+
+Problème: Accuracy faible
+  → Vérifier étiquetage des données
+  → Augmenter quantité données
+  → Augmenter augmentation
+  → Ajuster hyperparamètres
+
+
+================================================================================
+Ressources additionnelles
+================================================================================
+
+- TensorFlow: https://www.tensorflow.org/tutorials
+- Keras: https://keras.io/
+- Transfer Learning: https://cs231n.github.io/transfer-learning/
+- U-Net Paper: https://arxiv.org/abs/1505.04597
+- MobileNetV2: https://arxiv.org/abs/1801.04381
+
+
+================================================================================
+Version: 1.0
+Créé par: AAMYMI Chaimae
+ASL-3D © 2024
+================================================================================
