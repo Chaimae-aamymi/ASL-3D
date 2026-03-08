@@ -1777,3 +1777,102 @@ section h2 {
         display: none;
     }
 }
+
+/* ── Flash Messages (SSR Notifications) ─────────────────────────── */
+.flash-message {
+    display: flex;
+    align-items: center;
+    padding: 0.9rem 1.2rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 1.2rem;
+    animation: slideIn 0.3s ease;
+}
+
+.flash-success {
+    background: rgba(6, 214, 160, 0.12);
+    border: 1px solid rgba(6, 214, 160, 0.3);
+    color: #06d6a0;
+}
+
+.flash-error {
+    background: rgba(255, 107, 107, 0.12);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    color: #ff6b6b;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Image Thumbnail Grid ─────────────────────────────────────────── */
+.image-thumb-card {
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: border-color 0.2s;
+}
+
+.image-thumb-card:hover {
+    border-color: var(--accent);
+}
+
+/* ── Guide Cards (analysis.html) ──────────────────────────────────── */
+.guide-card {
+    padding: 1.1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+.guide-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.guide-card h4 {
+    font-size: 0.95rem;
+    margin: 0 0 0.5rem;
+    color: var(--text-primary);
+}
+
+.guide-card p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0.15rem 0;
+    line-height: 1.5;
+}
+
+/* ── Form Inputs (text/number used like select) ───────────────────── */
+input.select-input,
+input[type="text"].select-input,
+input[type="email"].select-input,
+input[type="number"].select-input {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+
+input.select-input:focus,
+input[type="text"].select-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}

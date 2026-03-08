@@ -134,33 +134,88 @@ class DegradationDetector:
         
         return model
     
+    # ── YOLOv8 model cache (loaded once) ──────────────────────────────
+    _yolo_model = None
+
+    @classmethod
+    def _get_yolo(cls):
+        if cls._yolo_model is None:
+            try:
+                from ultralytics import YOLO
+                # Use the nano model for speed; auto-downloads on first use
+                cls._yolo_model = YOLO('yolov8n.pt')
+            except Exception as e:
+                print(f"[YOLOv8] Could not load: {e}")
+                cls._yolo_model = False  # sentinel: unavailable
+        return cls._yolo_model if cls._yolo_model is not False else None
+
+    # Mapping from COCO class names → degradation types
+    _YOLO_CLASS_MAP = {
+        'crack': 'fissures', 'fissure': 'fissures',
+        'water': 'humidite', 'moisture': 'humidite', 'damp': 'humidite',
+        'erosion': 'erosion', 'wear': 'erosion',
+        'mold': 'champignons', 'fungus': 'champignons', 'moss': 'champignons',
+        'stain': 'decoloration', 'discoloration': 'decoloration',
+        'crumble': 'effritement', 'spall': 'effritement',
+    }
+
+    def detect_yolo(self, image_array: np.ndarray) -> list:
+        """
+        Run YOLOv8 inference on image_array (H×W×3 uint8 numpy).
+        Returns list of degradation dicts compatible with detect().
+        Falls back to traditional detection if YOLOv8 is unavailable.
+        """
+        model = self._get_yolo()
+        if model is None:
+            return self._traditional_detection(image_array)
+
+        try:
+            results = model.predict(image_array, verbose=False, conf=0.25)
+            degradations = []
+            for r in results:
+                for box in r.boxes:
+                    cls_name = model.names[int(box.cls[0])].lower()
+                    deg_type = self._YOLO_CLASS_MAP.get(cls_name)
+                    if deg_type is None:
+                        # Unknown class → treat as fissures at low confidence
+                        deg_type = 'fissures'
+                    conf = float(box.conf[0])
+                    info = self.degradation_types.get(deg_type, {})
+                    degradations.append({
+                        'type': deg_type,
+                        'severity': info.get('severity', 'moyenne'),
+                        'confidence': round(conf, 3),
+                        'bbox': box.xyxy[0].tolist() if box.xyxy is not None else [],
+                    })
+            # If YOLOv8 found nothing, supplement with traditional
+            return degradations if degradations else self._traditional_detection(image_array)
+        except Exception as e:
+            print(f"[YOLOv8] Inference error: {e}")
+            return self._traditional_detection(image_array)
+
     def detect(self, image_array):
         """
-        Détecter les dégradations dans l'image avec Deep Learning
-        Utilise classification + segmentation sémantique
+        Détecter les dégradations dans l'image.
+        Tries YOLOv8 first; falls back to Keras CNN, then traditional CV.
         """
+        # ── 1. Try YOLOv8 ─────────────────────────────────────────────
+        yolo_result = self.detect_yolo(image_array)
+        if yolo_result:
+            return yolo_result
+
+        # ── 2. Keras CNN fallback ──────────────────────────────────────
         if self.model is None or self.segmentation_model is None:
             self.build_models()
-        
+
         degradations = []
-        
-        # Pré-traiter l'image
         processed_image = self._preprocess_image(image_array)
-        
-        # Classification: Identifier quels types de dégradations sont présents
         class_predictions = self._classify_degradations(processed_image)
-        
-        # Segmentation: Localiser les zones affectées
         segmentation_mask = self._segment_degradations(processed_image)
-        
-        # Fusion des résultats
         degradations = self._merge_predictions(
-            image_array,
-            class_predictions,
-            segmentation_mask
+            image_array, class_predictions, segmentation_mask
         )
-        
         return degradations
+
     
     def _preprocess_image(self, image_array):
         """Pré-traiter l'image pour les modèles de Deep Learning"""

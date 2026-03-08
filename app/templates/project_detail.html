@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détails du Projet — ASL-3D</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-logo"><span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
+                <h1>ASL-3D</h1>
+                <p class="tagline">Restauration Numérique Intelligente</p>
+            </div>
+            <nav class="sidebar-nav">
+                <span class="nav-label">Navigation</span>
+                <a href="/" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
+                <a href="/scanner" class="nav-item active"><span class="nav-icon"><i
+                            class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
+                <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
+                <a href="/analysis" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
+                <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
+            </nav>
+            <div class="sidebar-footer"><a href="/logout"
+                    style="color:var(--text-muted);font-size:0.8rem;text-decoration:none;"><i
+                        class="ph-bold ph-sign-out" style="margin-right:5px;"></i>Déconnexion</a></div>
+        </aside>
+
+        <div class="main-wrapper">
+            <main class="page-content">
+                <div class="page-header">
+                    <div class="breadcrumb">
+                        <a href="/" style="color:var(--text-muted);text-decoration:none;"><i
+                                class="ph-fill ph-squares-four" style="margin-right:4px;"></i>Tableau de bord</a>
+                        <span style="margin:0 0.4rem;">›</span>
+                        <a href="/scanner" style="color:var(--text-muted);text-decoration:none;">Scanner</a>
+                        <span style="margin:0 0.4rem;">›</span>
+                        {{ project.monument }}
+                    </div>
+                    <h2>{{ project.monument }}</h2>
+                    <p>{{ project.name }}{% if project.location %} · {{ project.location }}{% endif %}</p>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}{% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}"><i
+                        class="ph-bold {% if category == 'success' %}ph-check-circle{% else %}ph-warning-circle{% endif %}"
+                        style="margin-right:8px;"></i>{{ message }}</div>
+                {% endfor %}{% endif %}
+                {% endwith %}
+
+                <!-- PROJECT INFO -->
+                {% set sc =
+                {'nouveau':'#6c63ff','en_cours':'#ffd166','termine':'#06d6a0','danger':'#ff6b6b','archive':'#4a5568'} %}
+                <div
+                    style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin-bottom:2rem;">
+                    <div style="padding:1rem;background:var(--bg-card);border-radius:10px;">
+                        <p style="font-size:0.75rem;color:var(--text-muted);">Statut</p>
+                        <span
+                            style="padding:0.4rem 0.9rem;border-radius:20px;font-weight:600;font-size:0.85rem;background:{{ sc.get(project.status,'#4a5568') }}22;color:{{ sc.get(project.status,'#4a5568') }};">
+                            {{ project.status.upper() }}
+                        </span>
+                    </div>
+                    <div style="padding:1rem;background:var(--bg-card);border-radius:10px;">
+                        <p style="font-size:0.75rem;color:var(--text-muted);">Photos importées</p>
+                        <p style="font-size:1.3rem;font-weight:700;margin:0.2rem 0;">{{ images|length }}</p>
+                    </div>
+                    <div style="padding:1rem;background:var(--bg-card);border-radius:10px;">
+                        <p style="font-size:0.75rem;color:var(--text-muted);">Créé le</p>
+                        <p style="font-weight:600;margin:0.2rem 0;">{{ project.created_at.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                    {% if project.description %}
+                    <div style="padding:1rem;background:var(--bg-card);border-radius:10px;grid-column:span 2;">
+                        <p style="font-size:0.75rem;color:var(--text-muted);">Description</p>
+                        <p style="margin:0.2rem 0;">{{ project.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- IMAGES GRID -->
+                <section>
+                    <h3><i class="ph-duotone ph-images" style="margin-right:8px;"></i> Photos du Monument ({{
+                        images|length }})</h3>
+                    {% if images %}
+                    <div
+                        style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin-top:1rem;">
+                        {% for img in images %}
+                        <div class="image-thumb-card">
+                            <img src="/static/uploads/{{ project.upload_folder }}/{{ img }}" alt="{{ img }}"
+                                style="width:100%;height:130px;object-fit:cover;border-radius:8px;">
+                            <p
+                                style="font-size:0.75rem;color:var(--text-muted);margin:0.4rem 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                {{ img }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p style="color:var(--text-muted);margin-top:1rem;">Aucune image disponible dans ce projet.</p>
+                    {% endif %}
+                </section>
+
+                <!-- ACTIONS -->
+                <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
+                    <a href="/analysis?project_id={{ project.id }}" class="btn btn-primary">
+                        <i class="ph-bold ph-magnifying-glass" style="margin-right:8px;"></i> Analyser les Dégradations
+                    </a>
+                    <a href="/reconstruction?project_id={{ project.id }}" class="btn btn-secondary">
+                        <i class="ph-bold ph-cube" style="margin-right:8px;"></i> Reconstruire en 3D
+                    </a>
+                    <a href="/restoration-guide?project_id={{ project.id }}" class="btn btn-secondary">
+                        <i class="ph-bold ph-clipboard-text" style="margin-right:8px;"></i> Guide Restauration
+                    </a>
+                </div>
+            </main>
+            <footer class="footer">
+                <div class="footer-content">
+                    <p>&copy; 2026 ASL-3D</p>
+                    <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+</body>
+
+</html>

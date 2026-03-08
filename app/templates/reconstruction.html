@@ -4,310 +4,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reconstruction 3D - ASL-3D</title>
+    <title>Reconstruction 3D — ASL-3D</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    {% if selected_project_id and not model_ready %}
+    <!-- Auto-refresh every 8s while model is being generated -->
+    <meta http-equiv="refresh" content="8;url=/reconstruction?project_id={{ selected_project_id }}">
+    {% endif %}
 </head>
 
 <body>
     <div class="app-wrapper">
-
-        <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div class="sidebar-logo">
-                <span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
+            <div class="sidebar-logo"><span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
                 <h1>ASL-3D</h1>
-                <p class="tagline">Restauration Numérique Intelligente de Bâtiments Historiques</p>
+                <p class="tagline">Restauration Numérique Intelligente</p>
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
                 <a href="/" class="nav-item"><span class="nav-icon"><i
-                            class="ph-duotone ph-house"></i></span><span>Accueil</span></a>
+                            class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
                 <a href="/scanner" class="nav-item"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
                 <a href="/reconstruction" class="nav-item active"><span class="nav-icon"><i
-                            class="ph-duotone ph-cube"></i></span><span>Reconstruction
-                        3D</span></a>
+                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
                 <a href="/analysis" class="nav-item"><span class="nav-icon"><i
-                            class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse</span></a>
+                            class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
                 <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
-                            class="ph-duotone ph-clipboard-text"></i></span><span>Guide de
-                        Restauration</span></a>
+                            class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
             </nav>
-            <div class="sidebar-footer">© 2026 ASL-3D</div>
+            <div class="sidebar-footer"><a href="/logout"
+                    style="color:var(--text-muted);font-size:0.8rem;text-decoration:none;"><i
+                        class="ph-bold ph-sign-out" style="margin-right:5px;"></i>Déconnexion</a></div>
         </aside>
 
-        <!-- MAIN -->
         <div class="main-wrapper">
             <main class="page-content">
-
                 <div class="page-header">
-                    <div class="breadcrumb"><i class="ph-fill ph-house" style="margin-right: 4px;"></i> Accueil
-                        <span>›</span> Reconstruction 3D
+                    <div class="breadcrumb"><i class="ph-fill ph-cube" style="margin-right:4px;"></i> Reconstruction 3D
                     </div>
-                    <h2>Reconstruction 3D</h2>
-                    <p>Génération de modèles tridimensionnels à partir de vos images</p>
+                    <h2>Reconstruction 3D — OpenCV SfM</h2>
+                    <p>Générez un modèle 3D de votre monument à partir des photos importées</p>
                 </div>
 
-                <section class="reconstruction-section">
-                    <h2>Modélisation Numérique</h2>
-                    <div class="reconstruction-container">
-                        <div class="model-controls">
-                            <h3><i class="ph-fill ph-sliders-horizontal" style="margin-right: 8px;"></i> Paramètres</h3>
-                            <div class="control-group">
-                                <label>Fichier Image</label>
-                                <select id="imageFile" class="select-input">
-                                    <option value="">-- Sélectionner une image --</option>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}{% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}"><i
+                        class="ph-bold {% if category == 'success' %}ph-check-circle{% else %}ph-warning-circle{% endif %}"
+                        style="margin-right:8px;"></i>{{ message }}</div>
+                {% endfor %}{% endif %}
+                {% endwith %}
+
+                <!-- RECONSTRUCTION FORM -->
+                <section class="scanner-section">
+                    <h2><i class="ph-duotone ph-gear" style="margin-right:8px;"></i> Paramètres de Reconstruction</h2>
+                    <form method="POST" action="/reconstruction">
+                        <div
+                            style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
+                            <div class="option-group">
+                                <label for="project_id">Projet source :</label>
+                                <select name="project_id" id="project_id" class="select-input" required>
+                                    <option value="">-- Sélectionner un projet --</option>
+                                    {% for p in projects %}
+                                    <option value="{{ p.id }}" {% if selected_project_id==p.id %}selected{% endif %}>{{
+                                        p.monument }} — {{ p.name }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
-                            <div class="control-group">
-                                <label for="modelQuality">Qualité du Modèle</label>
-                                <select id="modelQuality" class="select-input">
-                                    <option value="low">Basse (≈10k vertices)</option>
-                                    <option value="medium" selected>Moyenne (≈50k vertices)</option>
-                                    <option value="high">Haute (≈200k vertices)</option>
-                                    <option value="ultra">Ultra (≈500k vertices)</option>
+                            <div class="option-group">
+                                <label for="quality">Qualité :</label>
+                                <select name="quality" id="quality" class="select-input">
+                                    <option value="low">Basse (rapide)</option>
+                                    <option value="medium">Moyenne</option>
+                                    <option value="high" selected>Haute (recommandée)</option>
+                                    <option value="ultra">Ultra (lent)</option>
                                 </select>
                             </div>
-                            <div class="control-group">
-                                <label for="scale">Échelle du Modèle</label>
-                                <input type="number" id="scale" value="1.0" step="0.1" min="0.1" max="5.0"
-                                    class="number-input">
-                            </div>
-                            <div class="control-group">
-                                <label for="smoothness">Lissage : <span id="smoothnessValue">2</span></label>
-                                <input type="range" id="smoothness" min="0" max="5" value="2" step="0.5"
-                                    class="range-input">
-                            </div>
-                            <div class="control-group">
-                                <label for="detailLevel">Détail de Texture : <span id="detailValue">5</span></label>
-                                <input type="range" id="detailLevel" min="0" max="10" value="5" step="1"
-                                    class="range-input">
-                            </div>
-                            <button class="btn btn-primary" onclick="startReconstruction()"
-                                style="width:100%;margin-top:0.75rem;justify-content:center;">
-                                <i class="ph-bold ph-cube" style="margin-right: 8px;"></i> Lancer la Reconstruction
-                            </button>
                         </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ph-bold ph-play-circle" style="margin-right:8px;"></i> Démarrer la Reconstruction
+                            3D
+                        </button>
+                    </form>
 
-                        <div class="model-preview">
-                            <h3><i class="ph-duotone ph-desktop" style="margin-right: 8px;"></i> Aperçu du Modèle</h3>
-                            <div id="modelCanvas" class="model-canvas">
-                                <p class="placeholder">Lancez une reconstruction pour voir le modèle 3D</p>
-                            </div>
-                            <div class="model-info">
-                                <p id="modelStats">Sélectionnez une image et configurez les paramètres</p>
-                            </div>
+                    <!-- Pipeline Steps (visual indicator) -->
+                    <div style="display:flex;gap:0.8rem;margin-top:2rem;flex-wrap:wrap;">
+                        {% set steps = [('ph-image','Chargement'),('ph-chart-scatter','Extraction
+                        SIFT'),('ph-arrows-in','BF Matching'),('ph-perspective','Triangulation'),('ph-export','Export
+                        GLB')] %}
+                        {% for icon, label in steps %}
+                        <div
+                            style="flex:1;min-width:100px;padding:0.7rem;background:rgba(255,255,255,0.04);border-radius:8px;text-align:center;border:1px solid {% if result %}var(--accent-2){% else %}var(--glass-border){% endif %};">
+                            <i class="ph-duotone {{ icon }}"
+                                style="font-size:1.3rem;color:{% if result %}var(--accent-2){% else %}var(--text-muted){% endif %};"></i>
+                            <p style="font-size:0.72rem;margin:0.3rem 0 0;color:var(--text-muted);">{{ label }}</p>
+                            {% if result %}<i class="ph-bold ph-check"
+                                style="color:var(--accent-2);font-size:0.7rem;"></i>{% endif %}
                         </div>
-                    </div>
-
-                    <div class="reconstruction-progress" id="progressSection" style="display: none;">
-                        <h3><i class="ph-duotone ph-hourglass-high" style="margin-right: 8px;"></i> Reconstruction en
-                            Cours</h3>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="reconstructionProgress"></div>
-                        </div>
-                        <p id="progressStatus">Initialisation du moteur de reconstruction...</p>
-                        <div class="progress-steps">
-                            <div class="step-item"><span class="step-check" id="step1"><i
-                                        class="ph-duotone ph-hourglass-high"></i></span><span>Analyse de
-                                    l'image</span></div>
-                            <div class="step-item"><span class="step-check" id="step2"><i
-                                        class="ph-duotone ph-hourglass-high"></i></span><span>Génération de la
-                                    carte de profondeur</span></div>
-                            <div class="step-item"><span class="step-check" id="step3"><i
-                                        class="ph-duotone ph-hourglass-high"></i></span><span>Création du
-                                    maillage 3D</span></div>
-                            <div class="step-item"><span class="step-check" id="step4"><i
-                                        class="ph-duotone ph-hourglass-high"></i></span><span>Optimisation et
-                                    lissage</span></div>
-                            <div class="step-item"><span class="step-check" id="step5"><i
-                                        class="ph-duotone ph-hourglass-high"></i></span><span>Export du
-                                    modèle</span></div>
-                        </div>
-                    </div>
-
-                    <div class="model-results" id="resultsSection" style="display: none;">
-                        <h3><i class="ph-fill ph-check-circle" style="color:var(--accent-2); margin-right: 8px;"></i>
-                            Résultats de la Reconstruction</h3>
-                        <div class="results-info">
-                            <div class="info-card">
-                                <h4>Vertices</h4>
-                                <p id="vertexCount" class="stat-value">-</p>
-                            </div>
-                            <div class="info-card">
-                                <h4>Faces</h4>
-                                <p id="faceCount" class="stat-value">-</p>
-                            </div>
-                            <div class="info-card">
-                                <h4>Texture</h4>
-                                <p id="textureInfo" class="stat-value">Appliquée</p>
-                            </div>
-                            <div class="info-card">
-                                <h4>Taille Fichier</h4>
-                                <p id="fileSize" class="stat-value">-</p>
-                            </div>
-                        </div>
-                        <div class="download-section">
-                            <h4><i class="ph-duotone ph-download-simple" style="margin-right: 8px;"></i> Télécharger le
-                                Modèle</h4>
-                            <div class="download-buttons">
-                                <button class="btn btn-secondary" onclick="downloadModel('obj')"><i
-                                        class="ph-bold ph-download-simple" style="margin-right: 8px;"></i> Format
-                                    OBJ</button>
-                                <button class="btn btn-secondary" onclick="downloadModel('ply')"><i
-                                        class="ph-bold ph-download-simple" style="margin-right: 8px;"></i> Format
-                                    PLY</button>
-                                <button class="btn btn-secondary" onclick="downloadModel('gltf')"><i
-                                        class="ph-bold ph-download-simple" style="margin-right: 8px;"></i> Format
-                                    glTF</button>
-                            </div>
-                        </div>
-                        <div class="next-steps">
-                            <h4>Prochaines Étapes</h4>
-                            <div class="step-buttons">
-                                <form id="formAnalysis" action="/analysis" method="get">
-                                    <button type="submit" class="btn btn-secondary" style="justify-content:center;"><i
-                                            class="ph-bold ph-magnifying-glass" style="margin-right: 8px;"></i> Analyser
-                                        les
-                                        Dégradations</button>
-                                </form>
-                                <form id="formRestoration" action="/restoration-guide" method="get">
-                                    <button type="submit" class="btn btn-primary" style="justify-content:center;"><i
-                                            class="ph-bold ph-clipboard-text" style="margin-right: 8px;"></i> Générer
-                                        Plan de
-                                        Restauration</button>
-                                </form>
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
                 </section>
 
-                <section class="reconstruction-info">
-                    <h3>À Propos de la Reconstruction 3D</h3>
-                    <div class="info-grid">
-                        <div class="info-card">
-                            <h4>Qu'est-ce que c'est ?</h4>
-                            <p>La reconstruction 3D transforme des images 2D en modèles tridimensionnels précis des
-                                structures.</p>
+                <!-- WAITING INDICATOR (meta-refresh active) -->
+                {% if selected_project_id and not model_ready %}
+                <div
+                    style="margin-top:2rem;padding:1.5rem;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:14px;text-align:center;">
+                    <i class="ph-duotone ph-hourglass-medium" style="font-size:2.5rem;color:var(--accent);"></i>
+                    <p style="margin-top:0.8rem;font-weight:600;">Reconstruction en cours...</p>
+                    <p style="font-size:0.85rem;color:var(--text-muted);">Cette page se rafraîchit automatiquement
+                        toutes les 8 secondes.</p>
+                </div>
+                {% endif %}
+
+                <!-- RESULTS (model ready) -->
+                {% if result %}
+                <section style="margin-top:2rem;">
+                    <h2><i class="ph-duotone ph-check-circle" style="color:var(--accent-2);margin-right:8px;"></i>
+                        Modèle 3D Prêt</h2>
+
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.5rem 0;">
+                        <div style="padding:1rem;background:var(--bg-card);border-radius:10px;text-align:center;">
+                            <i class="ph-fill ph-graph" style="font-size:1.5rem;color:var(--accent);"></i>
+                            <p style="font-size:1.4rem;font-weight:700;margin:0.3rem 0;">{{ result.vertices }}</p>
+                            <p style="font-size:0.75rem;color:var(--text-muted);">Sommets</p>
                         </div>
-                        <div class="info-card">
-                            <h4>Comment ça marche ?</h4>
-                            <p>En analysant les variations d'ombre et de lumière, le système estime la profondeur et
-                                crée un maillage 3D.</p>
+                        <div style="padding:1rem;background:var(--bg-card);border-radius:10px;text-align:center;">
+                            <i class="ph-fill ph-triangle" style="font-size:1.5rem;color:var(--accent-2);"></i>
+                            <p style="font-size:1.4rem;font-weight:700;margin:0.3rem 0;">{{ result.faces }}</p>
+                            <p style="font-size:0.75rem;color:var(--text-muted);">Faces</p>
                         </div>
-                        <div class="info-card">
-                            <h4>Formats Supportés</h4>
-                            <p>OBJ, PLY, glTF – compatibles avec Blender, AutoCAD et autres logiciels 3D.</p>
-                        </div>
-                        <div class="info-card">
-                            <h4>Cas d'Usage</h4>
-                            <p>Visualisation, analyse structurelle, planification de restauration, documentation
-                                archivée.</p>
-                        </div>
-                        <div class="info-card">
-                            <h4>Précision</h4>
-                            <p>La précision dépend de la qualité de l'image et des paramètres. Haute résolution =
-                                meilleure qualité.</p>
-                        </div>
-                        <div class="info-card">
-                            <h4>Tempo de Traitement</h4>
-                            <p>De quelques secondes (basse qualité) à quelques minutes (ultra haute résolution).</p>
+                        <div style="padding:1rem;background:var(--bg-card);border-radius:10px;text-align:center;">
+                            <i class="ph-fill ph-cube" style="font-size:1.5rem;color:var(--accent-3);"></i>
+                            <p style="font-size:1.4rem;font-weight:700;margin:0.3rem 0;">.GLB</p>
+                            <p style="font-size:0.75rem;color:var(--text-muted);">Format</p>
                         </div>
                     </div>
-                </section>
 
+                    <!-- 3D VIEWER — only native attributes, ZERO JS -->
+                    {% if result.model_file.endswith('.glb') %}
+                    <div style="margin:1.5rem 0;">
+                        <h3><i class="ph-duotone ph-cube" style="margin-right:8px;"></i> Visionneuse 3D Interactive</h3>
+                        <model-viewer src="/outputs/{{ result.model_file }}"
+                            alt="Modèle 3D — {{ result.project.monument if result.project else 'Monument' }}"
+                            auto-rotate camera-controls shadow-intensity="1" exposure="0.8"
+                            style="width:100%;height:450px;border-radius:16px;background:#0d1117;margin-top:1rem;"></model-viewer>
+                    </div>
+                    {% endif %}
+
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem;">
+                        <a href="/api/download/{{ result.model_file }}" class="btn btn-secondary">
+                            <i class="ph-bold ph-download-simple" style="margin-right:8px;"></i> Télécharger le Modèle
+                            .GLB
+                        </a>
+                        <a href="/analysis?project_id={{ result.project_id }}" class="btn btn-primary">
+                            <i class="ph-bold ph-magnifying-glass" style="margin-right:8px;"></i> Analyser les
+                            Dégradations
+                        </a>
+                    </div>
+                </section>
+                {% endif %}
             </main>
-
             <footer class="footer">
                 <div class="footer-content">
-                    <p>&copy; 2026 ASL-3D - Restauration de Patrimoine Historique</p>
+                    <p>&copy; 2026 ASL-3D</p>
                     <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
                 </div>
             </footer>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', loadImages);
-        document.getElementById('smoothness').addEventListener('input', function () { document.getElementById('smoothnessValue').textContent = this.value; });
-        document.getElementById('detailLevel').addEventListener('input', function () { document.getElementById('detailValue').textContent = this.value; });
-
-        function loadImages() {
-            fetch('/api/files').then(r => r.json()).then(data => {
-                const select = document.getElementById('imageFile');
-                select.innerHTML = '<option value="">-- Sélectionner une image --</option>';
-                data.files.forEach(file => {
-                    if (file.match(/\.(jpg|jpeg|png|gif|bmp)$/i)) {
-                        const opt = document.createElement('option');
-                        opt.value = file; opt.textContent = file;
-                        select.appendChild(opt);
-                    }
-                });
-
-                // Auto-select file from URL if present
-                const urlParams = new URLSearchParams(window.location.search);
-                const fileParam = urlParams.get('file');
-                if (fileParam && data.files.includes(fileParam)) {
-                    select.value = fileParam;
-                    select.dispatchEvent(new Event('change'));
-                    startReconstruction();
-                }
-            }).catch(e => console.error('Erreur:', e));
-        }
-
-        function startReconstruction() {
-            const filename = document.getElementById('imageFile').value;
-            if (!filename) { alert('Veuillez sélectionner une image'); return; }
-            const params = { quality: document.getElementById('modelQuality').value, scale: parseFloat(document.getElementById('scale').value), smoothness: parseFloat(document.getElementById('smoothness').value), detail: parseInt(document.getElementById('detailLevel').value) };
-            document.getElementById('progressSection').style.display = 'block';
-            document.getElementById('resultsSection').style.display = 'none';
-            let progress = 0;
-            const progressFill = document.getElementById('reconstructionProgress');
-            const progressStatus = document.getElementById('progressStatus');
-            const steps = ['step1', 'step2', 'step3', 'step4', 'step5'];
-            let currentStep = 0;
-            const progressInterval = setInterval(() => {
-                if (progress < 95) {
-                    progress += Math.random() * 12;
-                    progressFill.style.width = Math.min(progress, 95) + '%';
-                    if (currentStep < steps.length && progress > (currentStep + 1) * 18) { document.getElementById(steps[currentStep]).innerHTML = '<i class="ph-bold ph-check" style="color:var(--accent-2);"></i>'; currentStep++; }
-                }
-            }, 300);
-            const statuses = ['Initialisation...', 'Chargement de l\'image...', 'Analyse des pixels...', 'Génération de la carte de profondeur...', 'Création du maillage 3D...', 'Lissage des surfaces...', 'Application de la texture...', 'Optimisation du modèle...', 'Préparation de l\'export...'];
-            let si = 0;
-            const statusInterval = setInterval(() => { if (si < statuses.length) { progressStatus.textContent = statuses[si++]; } }, 600);
-            fetch(`/api/reconstruct-3d/${filename}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ params }) })
-                .then(r => r.json())
-                .then(data => {
-                    clearInterval(progressInterval); clearInterval(statusInterval);
-                    progressFill.style.width = '100%';
-                    steps.forEach(s => document.getElementById(s).innerHTML = '<i class="ph-bold ph-check" style="color:var(--accent-2);"></i>');
-                    progressStatus.textContent = 'Reconstruction complétée !';
-
-                    // Update next step button links
-                    const selectedFile = document.getElementById('imageFile').value;
-                    if (selectedFile) {
-                        document.getElementById('formAnalysis').action = `/analysis?file=${encodeURIComponent(selectedFile)}`;
-                        document.getElementById('formRestoration').action = `/restoration-guide?file=${encodeURIComponent('degradation_' + selectedFile)}`;
-                    }
-
-                    setTimeout(() => { displayReconstructionResults(data); document.getElementById('progressSection').style.display = 'none'; document.getElementById('resultsSection').style.display = 'block'; }, 800);
-                }).catch(error => { clearInterval(progressInterval); clearInterval(statusInterval); progressStatus.textContent = 'Erreur: ' + error; });
-        }
-
-        function displayReconstructionResults(data) {
-            if (data.vertices) { document.getElementById('vertexCount').textContent = data.vertices.length.toLocaleString(); }
-            if (data.faces) { document.getElementById('faceCount').textContent = data.faces.length.toLocaleString(); }
-            document.getElementById('fileSize').textContent = '~' + Math.round(data.vertices.length / 1000) + ' KB';
-        }
-
-        function downloadModel(format) {
-            const filename = document.getElementById('imageFile').value;
-            if (filename) { window.location.href = `/api/download/model_3d_${filename.split('.')[0]}.${format}`; }
-        }
-    </script>
 </body>
 
 </html>

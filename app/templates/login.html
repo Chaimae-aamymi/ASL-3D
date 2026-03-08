@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — ASL-3D</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* ── Auth layout ────────────────────────────────────────────── */
+        body {
+            background: var(--bg-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+            background-image: radial-gradient(ellipse at 60% 10%, rgba(108, 99, 255, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 10% 90%, rgba(6, 214, 160, 0.08) 0%, transparent 60%);
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 22px;
+            padding: 2.6rem 2.4rem;
+            width: 100%;
+            max-width: 430px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 1.8rem;
+        }
+
+        .auth-logo .logo-icon {
+            font-size: 3rem;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+
+        .auth-logo h1 {
+            font-size: 1.9rem;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .auth-logo p {
+            color: var(--text-secondary);
+            font-size: 0.83rem;
+            margin: 0.3rem 0 0;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 1.1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.83rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.93rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn-auth {
+            width: 100%;
+            padding: 0.85rem;
+            border: none;
+            border-radius: 11px;
+            font-size: 0.97rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-auth:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-auth-email {
+            background: var(--accent);
+            color: #fff;
+            margin-top: 0.4rem;
+        }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin: 1.4rem 0;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Social buttons */
+        .social-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+        }
+
+        .btn-google {
+            background: #fff;
+            color: #3c4043;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-github {
+            background: #24292e;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .social-logo {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .auth-footer-link {
+            text-align: center;
+            margin-top: 1.3rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-footer-link a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-footer-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-card">
+
+        <!-- Logo -->
+        <div class="auth-logo">
+            <i class="ph-fill ph-bank logo-icon"></i>
+            <h1>ASL-3D</h1>
+            <p>Restauration Numérique Intelligente</p>
+        </div>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}" style="margin-bottom:1rem;">
+            <i class="ph-bold {% if category == 'success' %}ph-check-circle{% else %}ph-warning-circle{% endif %}"
+                style="margin-right:8px;"></i>{{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- ── Social login ───────────────────────────────────────────── -->
+        <div class="social-btn-group">
+            <!-- Google -->
+            <a href="/auth/google" class="btn-auth btn-google" style="text-decoration:none;">
+                <svg class="social-logo" viewBox="0 0 48 48">
+                    <path fill="#4285F4"
+                        d="M44.5 20H24v8.5h11.9C34.6 33 29.8 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l6-6C34.3 6.5 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8 20-20 0-1.3-.1-2.7-.5-4z" />
+                    <path fill="#34A853"
+                        d="M6.3 14.7l7 5.1C15.1 16.1 19.2 13 24 13c3.1 0 5.9 1.2 8 3.1l6-6C34.3 6.5 29.4 4 24 4 15.5 4 8.2 9.3 6.3 14.7z" />
+                    <path fill="#FBBC05"
+                        d="M24 44c5.2 0 9.9-1.8 13.6-4.7l-6.3-5.2C29.4 35.8 26.8 37 24 37c-5.7 0-10.6-3.8-12.2-9l-6.9 5.3C8.3 40.1 15.6 44 24 44z" />
+                    <path fill="#EA4335"
+                        d="M44.5 20H24v8.5h11.9c-1 2.9-3 5.3-5.7 6.9l6.3 5.2C41.3 37.1 44.5 30.9 44.5 24c0-1.3-.1-2.7-.5-4z" />
+                </svg>
+                Continuer avec Google
+            </a>
+
+            <!-- GitHub -->
+            <a href="/auth/github" class="btn-auth btn-github" style="text-decoration:none;">
+                <svg class="social-logo" viewBox="0 0 24 24" fill="white">
+                    <path
+                        d="M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.2 11.38.6.12.82-.26.82-.57v-2.18c-3.34.73-4.04-1.61-4.04-1.61-.55-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.83 1.23 1.83 1.23 1.07 1.83 2.8 1.3 3.48 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.96 0-1.32.47-2.4 1.24-3.24-.12-.3-.54-1.53.12-3.18 0 0 1.01-.32 3.3 1.23.96-.27 1.98-.4 3-.4s2.04.13 3 .4c2.29-1.55 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.77.84 1.24 1.92 1.24 3.24 0 4.63-2.81 5.65-5.48 5.95.43.37.81 1.1.81 2.23v3.3c0 .32.22.7.82.58C20.56 22.3 24 17.8 24 12.5 24 5.87 18.63.5 12 .5z" />
+                </svg>
+                Continuer avec GitHub
+            </a>
+        </div>
+
+        <!-- Divider -->
+        <div class="divider">ou avec votre email</div>
+
+        <!-- ── Email/Password form ─────────────────────────────────────── -->
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label for="email"><i class="ph-bold ph-envelope" style="margin-right:5px;"></i>Email</label>
+                <input type="email" name="email" id="email" placeholder="ingenieur@asl3d.com" required
+                    autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="password"><i class="ph-bold ph-lock" style="margin-right:5px;"></i>Mot de passe</label>
+                <input type="password" name="password" id="password" placeholder="••••••••" required
+                    autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-auth btn-auth-email">
+                <i class="ph-bold ph-sign-in"></i> Se connecter
+            </button>
+        </form>
+
+        <div class="auth-footer-link" style="margin-top:1.5rem;">
+            Pas encore de compte ? <a href="/register">Créer un compte</a>
+        </div>
+    </div>
+</body>
+
+</html>

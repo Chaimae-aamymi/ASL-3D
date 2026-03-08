@@ -1,15 +1,41 @@
-Flask==2.3.0
-Werkzeug==2.3.0
+# ==============================================================
+# ASL-3D — Requirements
+# Python 3.10 | Flask | MySQL (XAMPP) | YOLOv8 | fpdf2
+# Install: pip install -r requirements.txt
+# ==============================================================
+
+# Web framework
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# Database
+Flask-SQLAlchemy==3.1.1
+PyMySQL==1.1.0
+cryptography==41.0.5          # Required by PyMySQL for SSL
+
+# Image processing & Computer Vision
 numpy>=1.24.0
 Pillow>=9.5.0
 opencv-contrib-python>=4.8.0
 scikit-image>=0.20.0
 scipy>=1.11.0
+
+# Deep Learning - YOLOv8
+ultralytics>=8.0.200
+
+# Deep Learning - Keras fallback
 tensorflow>=2.13.0
-keras>=2.13.0
-tensorflow>=2.10.0
-keras>=3.0.0
-opencv-python>=4.5.0
-pillow>=9.0.0
-numpy>=1.21.0
-flask>=2.0.0
+
+# 3D export (SfM pipeline)
+trimesh>=4.0.0
+pyOpenGL>=3.1.7               # Optional for trimesh scene rendering
+
+# PDF generation
+fpdf2>=2.7.6
+
+# Visualization
+matplotlib>=3.7.0
+
+# Utilities
+requests>=2.31.0
+python-dotenv>=1.0.0          # For .env config files

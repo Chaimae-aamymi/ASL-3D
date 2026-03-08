@@ -6,6 +6,7 @@ __pycache__/
 .Python
 env/
 venv/
+venv_asl3d/
 *.egg-info/
 dist/
 build/
@@ -15,6 +16,9 @@ build/
 *.pb
 saved_model/
 models/
+
+# YOLOv8
+*.pt
 
 # IDE
 .vscode/
@@ -28,3 +32,14 @@ Thumbs.db
 
 # Logs
 *.log
+
+# ⚠️ SECURITY — never commit these
+.env
+*.env
+
+# Generated files (large binaries)
+outputs/
+static/uploads/
+
+# Virtual environment
+venv_asl3d/

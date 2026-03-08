@@ -4,219 +4,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASL-3D - Restauration Numérique de Bâtiments Historiques</title>
-    <meta name="description"
-        content="Scannez, analysez et reconstruisez numériquement vos bâtiments historiques avec l'IA.">
+    <title>Tableau de Bord — ASL-3D</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 
 <body>
     <div class="app-wrapper">
-
         <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="sidebar-logo">
                 <span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
                 <h1>ASL-3D</h1>
-                <p class="tagline">Restauration Numérique Intelligente de Bâtiments Historiques</p>
+                <p class="tagline">Restauration Numérique Intelligente</p>
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
-                <a href="/" class="nav-item active">
-                    <span class="nav-icon"><i class="ph-duotone ph-house"></i></span>
-                    <span>Accueil</span>
-                </a>
-                <a href="/scanner" class="nav-item">
-                    <span class="nav-icon"><i class="ph-duotone ph-camera"></i></span>
-                    <span>Scanner</span>
-                </a>
-                <a href="/reconstruction" class="nav-item">
-                    <span class="nav-icon"><i class="ph-duotone ph-cube"></i></span>
-                    <span>Reconstruction 3D</span>
-                </a>
-                <a href="/analysis" class="nav-item">
-                    <span class="nav-icon"><i class="ph-duotone ph-magnifying-glass"></i></span>
-                    <span>Analyse</span>
-                </a>
-                <a href="/restoration-guide" class="nav-item">
-                    <span class="nav-icon"><i class="ph-duotone ph-clipboard-text"></i></span>
-                    <span>Guide de Restauration</span>
-                </a>
+                <a href="/" class="nav-item active"><span class="nav-icon"><i
+                            class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
+                <a href="/scanner" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
+                <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
+                <a href="/analysis" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
+                <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
             </nav>
             <div class="sidebar-footer">
-                © 2026 ASL-3D
+                <div
+                    style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
+                    <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
+                    <div>
+                        <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
+                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>
+                    </div>
+                </div>
+                <a href="/logout"
+                    style="display:flex;align-items:center;gap:0.5rem;color:var(--text-muted);font-size:0.8rem;text-decoration:none;">
+                    <i class="ph-bold ph-sign-out"></i> Déconnexion
+                </a>
             </div>
         </aside>
 
-        <!-- MAIN -->
         <div class="main-wrapper">
             <main class="page-content">
+                <div class="page-header">
+                    <div class="breadcrumb"><i class="ph-fill ph-squares-four" style="margin-right:4px;"></i> Tableau de
+                        bord</div>
+                    <h2>Bonjour, {{ user.name.split()[0] }} 👋</h2>
+                    <p>Voici un aperçu de vos projets de restauration patrimoniale.</p>
+                </div>
 
-                <!-- HERO -->
-                <section class="hero">
-                    <div class="hero-badge"><i class="ph-fill ph-sparkle"></i> Intelligence Artificielle · Patrimoine
-                        Historique</div>
-                    <div class="hero-content">
-                        <h2>Préservez l'Histoire avec l'Intelligence Artificielle</h2>
-                        <p>Scannez, analysez et reconstruisez numériquement vos bâtiments historiques avec précision et
-                            rapidité.</p>
-                        <div class="cta-buttons">
-                            <form action="/scanner" method="get">
-                                <button type="submit" class="btn btn-primary"><i class="ph-bold ph-camera"></i>
-                                    Commencer le Scan</button>
-                            </form>
-                            <form action="/analysis" method="get">
-                                <button type="submit" class="btn btn-secondary"><i
-                                        class="ph-bold ph-magnifying-glass"></i> Analyser Dégradations</button>
-                            </form>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}{% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">
+                    <i class="ph-bold {% if category == 'success' %}ph-check-circle{% else %}ph-warning-circle{% endif %}"
+                        style="margin-right:8px;"></i>{{ message }}
+                </div>
+                {% endfor %}{% endif %}
+                {% endwith %}
+
+                <!-- STATS CARDS -->
+                <div
+                    style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.2rem;margin-bottom:2.5rem;">
+                    <div
+                        style="padding:1.5rem;background:var(--bg-card);border-radius:14px;border:1px solid var(--glass-border);">
+                        <i class="ph-fill ph-buildings" style="font-size:2rem;color:var(--accent);"></i>
+                        <p style="font-size:2rem;font-weight:800;margin:0.4rem 0;">{{ total_projects }}</p>
+                        <p style="font-size:0.85rem;color:var(--text-secondary);">Total Projets</p>
+                    </div>
+                    <div
+                        style="padding:1.5rem;background:var(--bg-card);border-radius:14px;border:1px solid var(--glass-border);">
+                        <i class="ph-fill ph-warning-circle" style="font-size:2rem;color:#ff6b6b;"></i>
+                        <p
+                            style="font-size:2rem;font-weight:800;margin:0.4rem 0;color:{% if danger_count > 0 %}#ff6b6b{% else %}var(--text-primary){% endif %}">
+                            {{ danger_count }}</p>
+                        <p style="font-size:0.85rem;color:var(--text-secondary);">Alertes Critiques</p>
+                    </div>
+                    <div
+                        style="padding:1.5rem;background:var(--bg-card);border-radius:14px;border:1px solid var(--glass-border);">
+                        <i class="ph-fill ph-magnifying-glass" style="font-size:2rem;color:var(--accent-2);"></i>
+                        <p style="font-size:2rem;font-weight:800;margin:0.4rem 0;">{{ recent_analyses|length }}</p>
+                        <p style="font-size:0.85rem;color:var(--text-secondary);">Analyses Récentes</p>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:start;flex-wrap:wrap;">
+                    <!-- PROJECTS TABLE -->
+                    <section>
+                        <h3 style="margin-bottom:1rem;"><i class="ph-duotone ph-list-bullets"
+                                style="margin-right:8px;"></i>Projets en Course</h3>
+                        {% if projects %}
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%;border-collapse:collapse;font-size:0.87rem;">
+                                <thead>
+                                    <tr style="text-align:left;border-bottom:1px solid var(--border);">
+                                        <th style="padding:0.7rem 1rem;color:var(--text-secondary);">Monument</th>
+                                        <th style="padding:0.7rem 1rem;color:var(--text-secondary);">Projet</th>
+                                        <th style="padding:0.7rem 1rem;color:var(--text-secondary);">Statut</th>
+                                        <th style="padding:0.7rem 1rem;color:var(--text-secondary);">Date</th>
+                                        <th style="padding:0.7rem 1rem;color:var(--text-secondary);">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in projects %}
+                                    {% set status_color =
+                                    {'nouveau':'#6c63ff','en_cours':'#ffd166','termine':'#06d6a0','danger':'#ff6b6b','archive':'#4a5568'}
+                                    %}
+                                    <tr style="border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s;"
+                                        onmouseover="this.style.background='rgba(255,255,255,0.03)'"
+                                        onmouseout="this.style.background=''">>
+                                        <td style="padding:0.8rem 1rem;font-weight:600;">{{ p.monument }}</td>
+                                        <td style="padding:0.8rem 1rem;color:var(--text-secondary);">{{ p.name }}</td>
+                                        <td style="padding:0.8rem 1rem;">
+                                            <span
+                                                style="padding:0.3rem 0.75rem;border-radius:20px;font-size:0.78rem;font-weight:600;background:{{ status_color.get(p.status,'#4a5568') }}22;color:{{ status_color.get(p.status,'#4a5568') }};">
+                                                {{ p.status.upper() }}
+                                            </span>
+                                        </td>
+                                        <td style="padding:0.8rem 1rem;color:var(--text-muted);">{{
+                                            p.created_at.strftime('%d/%m/%Y') }}</td>
+                                        <td style="padding:0.8rem 1rem;">
+                                            <a href="/analysis?project_id={{ p.id }}"
+                                                style="color:var(--accent);text-decoration:none;font-size:0.8rem;margin-right:0.8rem;">Analyser</a>
+                                            <a href="/reconstruction?project_id={{ p.id }}"
+                                                style="color:var(--accent-2);text-decoration:none;font-size:0.8rem;">3D</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
+                        {% else %}
+                        <div
+                            style="text-align:center;padding:3rem;background:var(--bg-card);border-radius:14px;border:1px dashed var(--border);">
+                            <i class="ph-duotone ph-folder-open" style="font-size:3rem;color:var(--text-muted);"></i>
+                            <p style="color:var(--text-muted);margin-top:1rem;">Aucun projet pour l'instant.</p>
+                            <a href="/scanner" class="btn btn-primary" style="margin-top:1rem;display:inline-flex;">
+                                <i class="ph-bold ph-plus" style="margin-right:8px;"></i> Créer un Projet
+                            </a>
+                        </div>
+                        {% endif %}
+                    </section>
+
+                    <!-- PIE CHART -->
+                    {% if pie_chart %}
+                    <div style="text-align:center;min-width:180px;">
+                        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem;">Répartition Risques
+                        </p>
+                        <img src="{{ pie_chart }}" alt="Répartition des risques"
+                            style="width:180px;border-radius:12px;">
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- RECENT ANALYSES -->
+                {% if recent_analyses %}
+                <section style="margin-top:2.5rem;">
+                    <h3><i class="ph-duotone ph-clock-counter-clockwise" style="margin-right:8px;"></i> Dernières
+                        Analyses</h3>
+                    <div
+                        style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin-top:1rem;">
+                        {% for a in recent_analyses %}
+                        {% set score = a.risk_score|float %}
+                        {% set sc = '#ff6b6b' if score >= 70 else ('#ffd166' if score >= 40 else '#06d6a0') %}
+                        <div
+                            style="padding:1.2rem;background:var(--bg-card);border-radius:12px;border:1px solid var(--glass-border);border-left:3px solid {{ sc }};">
+                            <p style="font-size:0.8rem;color:var(--text-muted);">{{ a.created_at.strftime('%d/%m/%Y') }}
+                            </p>
+                            <p style="font-size:0.9rem;font-weight:600;margin:0.3rem 0;">{{ a.source_image }}</p>
+                            <p style="font-size:1.3rem;font-weight:800;color:{{ sc }};">{{ score|int }}<span
+                                    style="font-size:0.8rem;color:var(--text-muted);">/100</span></p>
+                            <a href="/analysis?project_id={{ a.project_id }}"
+                                style="font-size:0.78rem;color:var(--accent);text-decoration:none;">Voir l'analyse →</a>
+                        </div>
+                        {% endfor %}
                     </div>
                 </section>
-
-                <!-- FEATURES -->
-                <section class="features">
-                    <h3>Nos Capacités</h3>
-                    <div class="features-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="ph-duotone ph-camera"></i></div>
-                            <h4>Scan Intelligent</h4>
-                            <p>Convertissez des photos 2D en modèles 3D précis grâce à notre IA</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="ph-duotone ph-magnifying-glass"></i></div>
-                            <h4>Détection IA</h4>
-                            <p>Identifiez automatiquement fissures, humidité et dégradations</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="ph-duotone ph-cube"></i></div>
-                            <h4>Reconstruction 3D</h4>
-                            <p>Créez des modèles 3D détaillés pour la visualisation et l'analyse</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="ph-duotone ph-clipboard-text"></i></div>
-                            <h4>Plan de Restauration</h4>
-                            <p>Générez des guides complets de restauration personnalisés</p>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- WORKFLOW -->
-                <section class="workflow">
-                    <h3>Flux de Travail</h3>
-                    <div class="workflow-steps">
-                        <div class="step">
-                            <div class="step-number">1</div>
-                            <h4>Capturer</h4>
-                            <p>Photographiez le bâtiment sous tous les angles</p>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">2</div>
-                            <h4>Analyser</h4>
-                            <p>Détection automatique des dégradations</p>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">3</div>
-                            <h4>Reconstruire</h4>
-                            <p>Créer un modèle 3D fidèle</p>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">4</div>
-                            <h4>Planifier</h4>
-                            <p>Plan de restauration détaillé</p>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">5</div>
-                            <h4>Restaurer</h4>
-                            <p>Exécuter les travaux guidés</p>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- DEGRADATION TYPES -->
-                <section class="degradation-types">
-                    <h3>Types de Dégradations Détectables</h3>
-                    <div class="degradation-grid">
-                        <div class="degradation-item">
-                            <div class="deg-icon" style="color: var(--accent-3);"><i class="ph-duotone ph-asterisk"></i>
-                            </div>
-                            <h5>Fissures</h5>
-                            <p>Fissures structurelles et superficielles</p>
-                        </div>
-                        <div class="degradation-item">
-                            <div class="deg-icon" style="color: var(--accent-primary);"><i
-                                    class="ph-duotone ph-drop"></i></div>
-                            <h5>Humidité</h5>
-                            <p>Infiltrations et humidité ascensionnelle</p>
-                        </div>
-                        <div class="degradation-item">
-                            <div class="deg-icon" style="color: var(--accent-2);"><i class="ph-duotone ph-wind"></i>
-                            </div>
-                            <h5>Érosion</h5>
-                            <p>Usure et dégâts climatiques</p>
-                        </div>
-                        <div class="degradation-item">
-                            <div class="deg-icon" style="color: var(--accent-3);"><i class="ph-duotone ph-plant"></i>
-                            </div>
-                            <h5>Champignons</h5>
-                            <p>Moisissures et infestations biologiques</p>
-                        </div>
-                        <div class="degradation-item">
-                            <div class="deg-icon" style="color: #ffd166;"><i class="ph-duotone ph-palette"></i></div>
-                            <h5>Décoloration</h5>
-                            <p>Perte de couleur et patine</p>
-                        </div>
-                        <div class="degradation-item">
-                            <div class="deg-icon" style="color: #ff9f1c;"><i class="ph-duotone ph-hammer"></i></div>
-                            <h5>Effritement</h5>
-                            <p>Désagrégation des matériaux</p>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- INFO HOW IT WORKS -->
-                <section class="info-section">
-                    <h3>Comment ça Marche</h3>
-                    <div class="info-grid">
-                        <div class="info-card">
-                            <h4>1. Préparation</h4>
-                            <p>Prenez des photos de haute qualité du bâtiment sous différents angles et conditions
-                                d'éclairage.</p>
-                        </div>
-                        <div class="info-card">
-                            <h4>2. Upload</h4>
-                            <p>Téléchargez vos images dans le système. Nos serveurs vont traiter les données.</p>
-                        </div>
-                        <div class="info-card">
-                            <h4>3. Analyse IA</h4>
-                            <p>L'IA analyse automatiquement les images pour détecter tous les types de dégradations.</p>
-                        </div>
-                        <div class="info-card">
-                            <h4>4. Reconstruction</h4>
-                            <p>Un modèle 3D précis est créé à partir des données analysées.</p>
-                        </div>
-                        <div class="info-card">
-                            <h4>5. Rapport</h4>
-                            <p>Recevez un rapport complet avec plan de restauration et estimations.</p>
-                        </div>
-                        <div class="info-card">
-                            <h4>6. Intervention</h4>
-                            <p>Suivez le guide pour restaurer votre bâtiment étape par étape.</p>
-                        </div>
-                    </div>
-                </section>
-
+                {% endif %}
             </main>
-
             <footer class="footer">
                 <div class="footer-content">
-                    <p>&copy; 2026 ASL-3D - Restauration de Patrimoine Historique</p>
+                    <p>&copy; 2026 ASL-3D</p>
                     <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
                 </div>
             </footer>
         </div>
-
     </div>
 </body>
 

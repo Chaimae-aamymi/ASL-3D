@@ -4,280 +4,264 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyse des Dégradations - ASL-3D</title>
+    <title>Analyse IA — ASL-3D</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 
 <body>
     <div class="app-wrapper">
-
-        <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div class="sidebar-logo">
-                <span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
+            <div class="sidebar-logo"><span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
                 <h1>ASL-3D</h1>
-                <p class="tagline">Restauration Numérique Intelligente de Bâtiments Historiques</p>
+                <p class="tagline">Restauration Numérique Intelligente</p>
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
                 <a href="/" class="nav-item"><span class="nav-icon"><i
-                            class="ph-duotone ph-house"></i></span><span>Accueil</span></a>
+                            class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
                 <a href="/scanner" class="nav-item"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
                 <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
-                            class="ph-duotone ph-cube"></i></span><span>Reconstruction
-                        3D</span></a>
+                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
                 <a href="/analysis" class="nav-item active"><span class="nav-icon"><i
-                            class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse</span></a>
+                            class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
                 <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
-                            class="ph-duotone ph-clipboard-text"></i></span><span>Guide de
-                        Restauration</span></a>
+                            class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
             </nav>
-            <div class="sidebar-footer">© 2026 ASL-3D</div>
+            <div class="sidebar-footer"><a href="/logout"
+                    style="color:var(--text-muted);font-size:0.8rem;text-decoration:none;"><i
+                        class="ph-bold ph-sign-out" style="margin-right:5px;"></i>Déconnexion</a></div>
         </aside>
 
-        <!-- MAIN -->
         <div class="main-wrapper">
             <main class="page-content">
-
                 <div class="page-header">
-                    <div class="breadcrumb"><i class="ph-fill ph-house" style="margin-right: 4px;"></i> Accueil
-                        <span>›</span> Analyse
-                    </div>
-                    <h2>Analyse des Dégradations</h2>
-                    <p>Détection automatique par intelligence artificielle</p>
+                    <div class="breadcrumb"><i class="ph-fill ph-magnifying-glass" style="margin-right:4px;"></i>
+                        Analyse IA</div>
+                    <h2>Analyse des Dégradations — YOLOv8</h2>
+                    <p>Détection intelligente des fissures, humidité et dégradations structurelles</p>
                 </div>
 
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}{% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}"><i
+                        class="ph-bold {% if category == 'success' %}ph-check-circle{% else %}ph-warning-circle{% endif %}"
+                        style="margin-right:8px;"></i>{{ message }}</div>
+                {% endfor %}{% endif %}
+                {% endwith %}
+
+                <!-- ANALYSIS FORM -->
                 <section class="analysis-section">
-                    <h2>Analyser une Image</h2>
-                    <div class="analysis-container">
-                        <div class="file-selection">
-                            <h3><i class="ph-duotone ph-folder-open" style="margin-right: 8px;"></i>Sélectionner un
-                                fichier</h3>
-                            <div class="file-browser">
-                                <select id="fileSelect" class="select-input">
-                                    <option value="">-- Charger un fichier --</option>
+                    <h2><i class="ph-duotone ph-sliders-horizontal" style="margin-right:8px;"></i> Sélectionner Photo &
+                        Projet</h2>
+                    <form method="POST" action="/analysis">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem;">
+                            <div class="option-group">
+                                <label for="project_id">Projet :</label>
+                                <select name="project_id" id="project_id" class="select-input" required>
+                                    <option value="">-- Sélectionner un projet --</option>
+                                    {% for p in projects %}
+                                    <option value="{{ p.id }}" {% if selected_project_id==p.id %}selected{% endif %}>{{
+                                        p.monument }} — {{ p.name }}</option>
+                                    {% endfor %}
                                 </select>
-                                <button class="btn btn-secondary" onclick="refreshFileList()">↻</button>
+                            </div>
+                            <div class="option-group">
+                                <label for="image_name">Photo à analyser :</label>
+                                <select name="image_name" id="image_name" class="select-input" required>
+                                    <option value="">-- Sélectionner une image --</option>
+                                    {% for img in project_images %}
+                                    <option value="{{ img }}">{{ img }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if not project_images %}
+                                <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem;">
+                                    <i class="ph-bold ph-info" style="margin-right:4px;"></i>
+                                    Sélectionnez d'abord un projet pour charger ses photos.
+                                </p>
+                                {% endif %}
                             </div>
                         </div>
-                        <div class="image-display">
-                            <h3><i class="ph-duotone ph-image" style="margin-right: 8px;"></i>Image Originale</h3>
-                            <div id="originalImage" class="image-container">
-                                <p class="placeholder">Sélectionnez une image</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="margin-top:1.25rem;">
-                        <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeDegradation()"
-                            style="width:100%;justify-content:center;">
-                            <i class="ph-bold ph-magnifying-glass" style="margin-right: 8px;"></i> Lancer l'Analyse des
-                            Dégradations
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ph-bold ph-magnifying-glass" style="margin-right:8px;"></i> Lancer l'Analyse IA
                         </button>
-                    </div>
-
-                    <div class="progress-indicator" id="progressSection" style="display: none;">
-                        <h3><i class="ph-duotone ph-hourglass-high" style="margin-right: 8px;"></i> Analyse en Cours
-                        </h3>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="analyzeProgress"></div>
-                        </div>
-                        <p id="progressText">Analyse de l'image...</p>
-                    </div>
-
-                    <div class="analysis-results" id="resultsSection" style="display: none;">
-                        <h3><i class="ph-fill ph-check-circle" style="color:var(--accent-2); margin-right: 8px;"></i>
-                            Résultats de l'Analyse</h3>
-                        <div class="severity-indicator">
-                            <h4>Niveau de Sévérité Global</h4>
-                            <div class="severity-display" id="severityDisplay"></div>
-                        </div>
-                        <div class="detected-degradations">
-                            <h4>Dégradations Détectées</h4>
-                            <div id="degradationsList" class="degradations-list"></div>
-                        </div>
-                        <div class="visualization-area">
-                            <h3>Visualisation des Dégradations</h3>
-                            <img id="visualizationImage" src="" alt="Dégradations détectées">
-                        </div>
-                        <div class="recommendations-area">
-                            <h4>Recommandations d'Intervention</h4>
-                            <div id="recommendationsList" class="recommendations-list"></div>
-                        </div>
-                        <div class="action-buttons">
-                            <form id="formRestoration" action="/restoration-guide" method="get">
-                                <button type="submit" class="btn btn-primary" style="justify-content:center;"><i
-                                        class="ph-bold ph-clipboard-text" style="margin-right: 8px;"></i> Générer Plan
-                                    de Restauration</button>
-                            </form>
-                            <button class="btn btn-secondary" onclick="downloadReport()"
-                                style="justify-content:center;"><i class="ph-bold ph-download-simple"
-                                    style="margin-right: 8px;"></i> Télécharger le Rapport</button>
-                        </div>
-                    </div>
+                    </form>
                 </section>
 
-                <section class="degradation-guide">
-                    <h3>Guide des Types de Dégradation</h3>
-                    <div class="guide-grid">
-                        <div class="guide-card">
-                            <h4><i class="ph-duotone ph-asterisk" style="color:var(--accent-3);margin-right:8px;"></i>
-                                Fissures</h4>
-                            <p><strong>Sévérité :</strong> Haute</p>
-                            <p><strong>Description :</strong> Ruptures dans la structure, peuvent indiquer des problèmes
-                                structurels.</p>
-                            <p><strong>Action :</strong> Évaluation urgente requise</p>
+                {% if result %}
+                <!-- SCORE + GAUGE -->
+                <section style="margin-top:2rem;">
+                    <h2><i class="ph-duotone ph-chart-bar" style="margin-right:8px;"></i> Résultats de l'Analyse</h2>
+
+                    <div
+                        style="display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:center;margin:1.5rem 0;">
+                        <div>
+                            {% set score = result.risk_score|float %}
+                            {% set sc = '#ff6b6b' if score >= 70 else ('#ffd166' if score >= 40 else '#06d6a0') %}
+                            {% set label = 'DANGER — Intervention immédiate' if score >= 70 else ('ATTENTION — Planifier
+                            les travaux' if score >= 40 else 'SAIN — Entretien préventif') %}
+                            <div
+                                style="padding:1.5rem;background:{{ sc }}11;border-radius:14px;border-left:4px solid {{ sc }};">
+                                <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.3rem;">Score de
+                                    Risque Global</p>
+                                <h3 style="font-size:2rem;color:{{ sc }};margin:0;">{{ score|int }}<span
+                                        style="font-size:1rem;color:var(--text-muted);">/100</span></h3>
+                                <p style="color:{{ sc }};font-weight:600;margin:0.3rem 0 0;"><i
+                                        class="ph-bold ph-warning" style="margin-right:6px;"></i>{{ label }}</p>
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+                                <div style="padding:1rem;background:var(--bg-card);border-radius:10px;">
+                                    <p style="font-size:0.75rem;color:var(--text-muted);">Modèle IA</p>
+                                    <p style="font-weight:600;margin:0.2rem 0;">{{ result.model_used }}</p>
+                                </div>
+                                <div style="padding:1rem;background:var(--bg-card);border-radius:10px;">
+                                    <p style="font-size:0.75rem;color:var(--text-muted);">Statut MySQL</p>
+                                    <p style="font-weight:600;margin:0.2rem 0;color:{{ sc }};">{{ result.status_update
+                                        }}</p>
+                                </div>
+                                <div style="padding:1rem;background:var(--bg-card);border-radius:10px;">
+                                    <p style="font-size:0.75rem;color:var(--text-muted);">Sévérité</p>
+                                    <p style="font-weight:600;margin:0.2rem 0;text-transform:uppercase;">{{
+                                        result.severity }}</p>
+                                </div>
+                                <div style="padding:1rem;background:var(--bg-card);border-radius:10px;">
+                                    <p style="font-size:0.75rem;color:var(--text-muted);">Dégradations</p>
+                                    <p style="font-weight:600;margin:0.2rem 0;">{{ (result.degradations or [])|length }}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="guide-card">
-                            <h4><i class="ph-duotone ph-drop" style="color:var(--accent-primary);margin-right:8px;"></i>
-                                Humidité</h4>
-                            <p><strong>Sévérité :</strong> Moyenne</p>
-                            <p><strong>Description :</strong> Infiltrations d'eau, effloresences salines, zones humides.
-                            </p>
-                            <p><strong>Action :</strong> Diagnostic de source et traitement</p>
+
+                        {% if gauge %}
+                        <div style="text-align:center;">
+                            <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem;">Indicateur de
+                                Risque</p>
+                            <img src="{{ gauge }}" alt="Gauge de risque" style="width:200px;border-radius:12px;">
                         </div>
-                        <div class="guide-card">
-                            <h4><i class="ph-duotone ph-wind" style="color:var(--accent-2);margin-right:8px;"></i>
-                                Érosion</h4>
-                            <p><strong>Sévérité :</strong> Moyenne</p>
-                            <p><strong>Description :</strong> Usure progressive de la surface due aux agents
-                                climatiques.</p>
-                            <p><strong>Action :</strong> Protection et retraitement</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- IMAGES -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1.5rem;">
+                        <div>
+                            <h3><i class="ph-duotone ph-image" style="margin-right:6px;"></i> Photo Originale</h3>
+                            {% set proj_folder = result.project.upload_folder %}
+                            <img src="/static/uploads/{{ proj_folder }}/{{ result.source_image }}" alt="Originale"
+                                style="width:100%;max-height:300px;object-fit:contain;border-radius:10px;background:#0d1117;margin-top:0.5rem;">
                         </div>
-                        <div class="guide-card">
-                            <h4><i class="ph-duotone ph-plant" style="color:var(--accent-3);margin-right:8px;"></i>
-                                Champignons</h4>
-                            <p><strong>Sévérité :</strong> Haute</p>
-                            <p><strong>Description :</strong> Moisissures, lichens, végétation pathogène.</p>
-                            <p><strong>Action :</strong> Traitement immédiat</p>
+                        <div>
+                            <h3><i class="ph-duotone ph-scan" style="margin-right:6px;"></i> Dégradations Détectées</h3>
+                            <img src="/outputs/{{ result.annotated_image }}" alt="Annotée"
+                                style="width:100%;max-height:300px;object-fit:contain;border-radius:10px;background:#0d1117;margin-top:0.5rem;">
                         </div>
-                        <div class="guide-card">
-                            <h4><i class="ph-duotone ph-palette" style="color:#ffd166;margin-right:8px;"></i>
-                                Décoloration</h4>
-                            <p><strong>Sévérité :</strong> Basse</p>
-                            <p><strong>Description :</strong> Perte de couleur, altération esthétique.</p>
-                            <p><strong>Action :</strong> Nettoyage et protection</p>
+                    </div>
+
+                    <!-- DEGRADATION CARDS -->
+                    {% if result.degradations %}
+                    <div style="margin-top:2rem;">
+                        <h3><i class="ph-duotone ph-list-checks" style="margin-right:8px;"></i> Détail des Dégradations
+                            ({{ (result.degradations or [])|length }})</h3>
+                        <div
+                            style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-top:1rem;">
+                            {% for deg in result.degradations %}
+                            {% set conf = deg.get('confidence',0)|float %}
+                            {% set deg_color = '#ff6b6b' if deg.get('severity') in ('haute','critique') else ('#ffd166'
+                            if deg.get('severity') == 'moyenne' else '#06d6a0') %}
+                            <div
+                                style="padding:1.1rem;background:var(--bg-card);border-radius:10px;border-top:3px solid {{ deg_color }};">
+                                <h5 style="margin:0 0 0.4rem;color:{{ deg_color }};text-transform:capitalize;">{{
+                                    deg.get('type','?') }}</h5>
+                                <p style="font-size:0.8rem;margin:0.2rem 0;"><strong>Sévérité :</strong> {{
+                                    deg.get('severity','?') }}</p>
+                                <p style="font-size:0.8rem;margin:0.2rem 0;"><strong>Confiance :</strong> {{ (conf *
+                                    100)|int }}%</p>
+                                <div style="height:4px;background:#2a3347;border-radius:2px;margin-top:0.6rem;">
+                                    <div
+                                        style="height:4px;background:{{ deg_color }};border-radius:2px;width:{{ (conf*100)|int }}%;">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- RECOMMENDATIONS -->
+                    {% if result.recommendations %}
+                    <div style="margin-top:2rem;">
+                        <h3><i class="ph-duotone ph-lightbulb"
+                                style="margin-right:8px;color:var(--accent-primary);"></i> Recommandations</h3>
+                        <div
+                            style="padding:1.2rem;background:rgba(108,99,255,0.06);border-radius:12px;margin-top:0.8rem;">
+                            {% for line in result.recommendations.split('\n') %}
+                            <p style="font-size:0.87rem;margin:0.4rem 0;">{{ line }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- ACTIONS -->
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
+                        <a href="/restoration-guide?project_id={{ result.project_id }}" class="btn btn-primary">
+                            <i class="ph-bold ph-clipboard-text" style="margin-right:8px;"></i> Générer Plan de
+                            Restauration
+                        </a>
+                        <a href="/outputs/{{ result.annotated_image }}" download class="btn btn-secondary">
+                            <i class="ph-bold ph-download-simple" style="margin-right:8px;"></i> Télécharger Image
+                            Annotée
+                        </a>
+                    </div>
+                </section>
+                {% endif %}
+
+                <!-- DEGRADATION TYPE GUIDE -->
+                <section style="margin-top:3rem;">
+                    <h3><i class="ph-duotone ph-books" style="margin-right:8px;"></i> Guide — Types de Dégradation</h3>
+                    <div
+                        style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1rem;margin-top:1rem;">
                         <div class="guide-card">
-                            <h4><i class="ph-duotone ph-hammer" style="color:#ff9f1c;margin-right:8px;"></i> Effritement
+                            <h4><i class="ph-duotone ph-asterisk" style="color:#ff6b6b;margin-right:6px;"></i>Fissures
                             </h4>
-                            <p><strong>Sévérité :</strong> Moyenne</p>
-                            <p><strong>Description :</strong> Désagrégation du matériau, perte de cohésion.</p>
-                            <p><strong>Action :</strong> Consolidation et finition</p>
+                            <p>Ruptures structurelles — Score impact : élevé</p>
+                        </div>
+                        <div class="guide-card">
+                            <h4><i class="ph-duotone ph-drop" style="color:var(--accent);margin-right:6px;"></i>Humidité
+                            </h4>
+                            <p>Infiltrations, efflorescences — Score impact : moyen</p>
+                        </div>
+                        <div class="guide-card">
+                            <h4><i class="ph-duotone ph-wind"
+                                    style="color:var(--accent-2);margin-right:6px;"></i>Érosion</h4>
+                            <p>Usure surface — Score impact : moyen</p>
+                        </div>
+                        <div class="guide-card">
+                            <h4><i class="ph-duotone ph-plant" style="color:#06d6a0;margin-right:6px;"></i>Champignons
+                            </h4>
+                            <p>Croissance biologique — Score impact : élevé</p>
+                        </div>
+                        <div class="guide-card">
+                            <h4><i class="ph-duotone ph-palette"
+                                    style="color:#ffd166;margin-right:6px;"></i>Décoloration</h4>
+                            <p>Altération aspectuelle — Score impact : faible</p>
+                        </div>
+                        <div class="guide-card">
+                            <h4><i class="ph-duotone ph-grains" style="color:#ffa36c;margin-right:6px;"></i>Effritement
+                            </h4>
+                            <p>Perte cohésion — Score impact : moyen</p>
                         </div>
                     </div>
                 </section>
-
             </main>
-
             <footer class="footer">
                 <div class="footer-content">
-                    <p>&copy; 2026 ASL-3D - Restauration de Patrimoine Historique</p>
+                    <p>&copy; 2026 ASL-3D</p>
                     <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
                 </div>
             </footer>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () { refreshFileList(); });
-
-        function refreshFileList() {
-            fetch('/api/files')
-                .then(r => r.json())
-                .then(data => {
-                    const select = document.getElementById('fileSelect');
-                    select.innerHTML = '<option value="">-- Charger un fichier --</option>';
-                    data.files.forEach(file => {
-                        const opt = document.createElement('option');
-                        opt.value = file; opt.textContent = file;
-                        select.appendChild(opt);
-                    });
-
-                    // Auto-select file from URL if present
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const fileParam = urlParams.get('file');
-                    if (fileParam && data.files.includes(fileParam)) {
-                        select.value = fileParam;
-                        select.dispatchEvent(new Event('change'));
-                        // Automatically trigger analysis
-                        analyzeDegradation();
-                    }
-                }).catch(e => console.error('Erreur:', e));
-        }
-
-        document.getElementById('fileSelect').addEventListener('change', function () {
-            if (this.value) {
-                document.getElementById('originalImage').innerHTML =
-                    `<img src="/uploads/${this.value}" alt="Image" style="max-width:100%;max-height:380px;border-radius:10px;">`;
-            }
-        });
-
-        function analyzeDegradation() {
-            const filename = document.getElementById('fileSelect').value;
-            if (!filename) { alert('Veuillez sélectionner un fichier'); return; }
-            document.getElementById('progressSection').style.display = 'block';
-            document.getElementById('resultsSection').style.display = 'none';
-            let progress = 0;
-            const progressFill = document.getElementById('analyzeProgress');
-            const progressText = document.getElementById('progressText');
-            const progressInterval = setInterval(() => {
-                if (progress < 90) { progress += Math.random() * 15; progressFill.style.width = Math.min(progress, 90) + '%'; }
-            }, 200);
-            const statuses = ['Analyse de l\'image...', 'Détection des fissures...', 'Analyse d\'humidité...', 'Détection des champignons...', 'Calcul de sévérité...', 'Génération de la visualisation...'];
-            let si = 0;
-            const statusInterval = setInterval(() => { if (si < statuses.length) { progressText.textContent = statuses[si++]; } }, 800);
-            fetch(`/api/detect-degradation/${filename}`, { method: 'POST' })
-                .then(r => r.json())
-                .then(data => {
-                    clearInterval(progressInterval); clearInterval(statusInterval);
-                    progressFill.style.width = '100%'; progressText.textContent = 'Analyse complétée !';
-                    setTimeout(() => { displayResults(data); document.getElementById('progressSection').style.display = 'none'; document.getElementById('resultsSection').style.display = 'block'; }, 500);
-                }).catch(error => { clearInterval(progressInterval); clearInterval(statusInterval); progressText.textContent = 'Erreur: ' + error; });
-        }
-
-        function displayResults(data) {
-            const sMap = { 'critique': { color: '#ff6b6b', label: '<i class="ph-bold ph-warning-circle" style="margin-right:8px;"></i> CRITIQUE - Action immédiate requise' }, 'haute': { color: '#ffa36c', label: '<i class="ph-bold ph-warning" style="margin-right:8px;"></i> HAUTE - Intervention urgente' }, 'moyenne': { color: '#ffd166', label: '<i class="ph-bold ph-lightning" style="margin-right:8px;"></i> MOYENNE - À court terme' }, 'faible': { color: '#06d6a0', label: '<i class="ph-bold ph-check-circle" style="margin-right:8px;"></i> FAIBLE - Suivi recommandé' } };
-            const sev = data.severity;
-            const sevInfo = sMap[sev] || sMap['faible'];
-            document.getElementById('severityDisplay').innerHTML = `<div style="font-size:1.1rem;font-weight:700;color:${sevInfo.color};padding:1rem;background:rgba(255,255,255,0.04);border-radius:10px;border-left:4px solid ${sevInfo.color};">${sevInfo.label}</div>`;
-            const degradationsList = document.getElementById('degradationsList');
-            degradationsList.innerHTML = '';
-            if (data.degradations && data.degradations.length > 0) {
-                data.degradations.forEach(deg => {
-                    const item = document.createElement('div');
-                    item.className = 'degradation-item-display';
-                    item.innerHTML = `<h5>${deg.type}</h5><p><strong>Sévérité :</strong> ${deg.severity}</p><p><strong>Confiance :</strong> ${(deg.confidence * 100).toFixed(0)}%</p><p><strong>Zone :</strong> ${deg.location.width} × ${deg.location.height} px</p>`;
-                    degradationsList.appendChild(item);
-                });
-            } else { degradationsList.innerHTML = '<p class="placeholder">Aucune dégradation détectée</p>'; }
-            if (data.visualization) { document.getElementById('visualizationImage').src = `/outputs/${data.visualization}`; }
-            const recommendationsList = document.getElementById('recommendationsList');
-            recommendationsList.innerHTML = '';
-            if (data.recommendations) {
-                Object.entries(data.recommendations).forEach(([type, rec]) => {
-                    const item = document.createElement('div');
-                    item.className = 'recommendation-item';
-                    item.innerHTML = `<h5>${type}</h5><p>${rec}</p>`;
-                    recommendationsList.appendChild(item);
-                });
-            }
-
-            // Update next step button links
-            const filename = document.getElementById('fileSelect').value;
-            if (filename) {
-                document.getElementById('formRestoration').action = `/restoration-guide?file=${encodeURIComponent('degradation_' + filename)}`;
-            }
-        }
-
-        function downloadReport() {
-            const filename = document.getElementById('fileSelect').value;
-            if (filename) { window.location.href = `/api/download/report_${filename}.json`; }
-        }
-    </script>
 </body>
 
 </html>

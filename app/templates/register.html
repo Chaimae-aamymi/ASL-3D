@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription — ASL-3D</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body {
+            background: var(--bg-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-logo .logo-icon {
+            font-size: 3rem;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-logo h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .auth-logo p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin: 0.3rem 0 0;
+        }
+
+        .auth-form .form-group {
+            margin-bottom: 1.1rem;
+        }
+
+        .auth-form label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+
+        .auth-form input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .auth-form input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .auth-submit {
+            width: 100%;
+            padding: 0.85rem;
+            border: none;
+            border-radius: 10px;
+            background: var(--accent-2);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            transition: opacity 0.2s;
+        }
+
+        .auth-submit:hover {
+            opacity: 0.9;
+        }
+
+        .auth-link {
+            text-align: center;
+            margin-top: 1.2rem;
+            font-size: 0.87rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-link a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .password-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-card">
+        <div class="auth-logo">
+            <i class="ph-fill ph-bank logo-icon"></i>
+            <h1>ASL-3D</h1>
+            <p>Créer un Compte Ingénieur</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}" style="margin-bottom:1rem;">
+            <i class="ph-bold {% if category == 'success' %}ph-check-circle{% else %}ph-warning-circle{% endif %}"
+                style="margin-right:8px;"></i>{{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/register" class="auth-form">
+            <div class="form-group">
+                <label for="name"><i class="ph-bold ph-user" style="margin-right:5px;"></i>Nom complet</label>
+                <input type="text" name="name" id="name" placeholder="AAMYMI Chaimae" required autocomplete="name">
+            </div>
+            <div class="form-group">
+                <label for="email"><i class="ph-bold ph-envelope" style="margin-right:5px;"></i>Email</label>
+                <input type="email" name="email" id="email" placeholder="ingenieur@asl3d.com" required
+                    autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="password"><i class="ph-bold ph-lock" style="margin-right:5px;"></i>Mot de passe</label>
+                <input type="password" name="password" id="password" placeholder="Minimum 6 caractères" required
+                    autocomplete="new-password">
+                <p class="password-hint">Au moins 6 caractères</p>
+            </div>
+            <div class="form-group">
+                <label for="confirm_password"><i class="ph-bold ph-lock-key" style="margin-right:5px;"></i>Confirmer le
+                    mot de passe</label>
+                <input type="password" name="confirm_password" id="confirm_password" placeholder="••••••••" required
+                    autocomplete="new-password">
+            </div>
+            <button type="submit" class="auth-submit">
+                <i class="ph-bold ph-user-plus" style="margin-right:8px;"></i> Créer mon compte
+            </button>
+        </form>
+
+        <div class="auth-link" style="margin-top:1.5rem;">
+            Déjà un compte ? <a href="/login">Se connecter</a>
+        </div>
+    </div>
+</body>
+
+</html>
