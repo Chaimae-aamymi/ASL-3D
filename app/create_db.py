@@ -1,80 +1,88 @@
 """
-create_db.py — Crée la base de données asl3d_db et exécute le schéma SQL
+create_db.py — Cree la base de donnees asl3d_db et ses tables pour PostgreSQL
 Utilisation : python create_db.py
 """
 import os
 import sys
 
 try:
-    import pymysql
+    import psycopg2
+    from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 except ImportError:
-    print("❌ PyMySQL non installé. Exécutez : pip install pymysql")
+    print("[-] psycopg2 non installe. Executez : pip install psycopg2-binary")
     sys.exit(1)
+
+# Import app to use SQLAlchemy for table creation
+sys.path.insert(0, os.path.dirname(__file__))
+from app import app
+from models import db
 
 HOST     = 'localhost'
-USER     = 'root'
-PASSWORD = 'Chaimae@2005'
+USER     = 'postgres'
+PASSWORD = 'admin'
 DB_NAME  = 'asl3d_db'
-SQL_FILE = os.path.join(os.path.dirname(__file__), 'db_setup.sql')
 
-print(f"🔌 Connexion à MySQL ({HOST}) en tant que {USER}...")
+print(f"[+] Connexion a PostgreSQL ({HOST}) en tant que {USER}...")
 
 try:
-    conn = pymysql.connect(host=HOST, user=USER, password=PASSWORD, charset='utf8mb4')
+    # Connect to the default 'postgres' database to create the new one
+    conn = psycopg2.connect(host=HOST, user=USER, password=PASSWORD, dbname='postgres')
+    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = conn.cursor()
 except Exception as e:
-    print(f"❌ Impossible de se connecter à MySQL : {e}")
-    print("   → Assurez-vous que XAMPP MySQL est démarré.")
+    print(f"[-] Impossible de se connecter a PostgreSQL : {e}")
+    print("   -> Assurez-vous que PostgreSQL est en cours d'execution.")
     sys.exit(1)
 
-print(f"✅ Connecté. Création de la base '{DB_NAME}'...")
+print(f"[+] Connecte. Verification de la base '{DB_NAME}'...")
 
 try:
-    cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{DB_NAME}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
-    cursor.execute(f"USE `{DB_NAME}`;")
-    conn.commit()
-    print(f"✅ Base '{DB_NAME}' créée (ou déjà existante).")
+    cursor.execute(f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{DB_NAME}'")
+    exists = cursor.fetchone()
+    if not exists:
+        cursor.execute(f"CREATE DATABASE {DB_NAME}")
+        print(f"[+] Base '{DB_NAME}' creee.")
+    else:
+        print(f"[+] Base '{DB_NAME}' existe deja.")
 except Exception as e:
-    print(f"❌ Erreur lors de la création de la base : {e}")
-    sys.exit(1)
-
-# Exécuter db_setup.sql
-print(f"📄 Exécution de {SQL_FILE}...")
-try:
-    with open(SQL_FILE, 'r', encoding='utf-8') as f:
-        sql = f.read()
-
-    # Split on semicolons (skip empty statements)
-    statements = [s.strip() for s in sql.split(';') if s.strip()]
-    for stmt in statements:
-        try:
-            cursor.execute(stmt)
-        except pymysql.err.OperationalError as e:
-            # Ignore "table already exists" errors
-            if e.args[0] in (1050, 1060, 1061):
-                continue
-            print(f"  ⚠️  {e}")
-
-    conn.commit()
-    print("✅ Schéma créé avec succès !")
-except FileNotFoundError:
-    print(f"❌ Fichier {SQL_FILE} introuvable.")
-    sys.exit(1)
-except Exception as e:
-    print(f"❌ Erreur SQL : {e}")
+    print(f"[-] Erreur lors de la creation de la base : {e}")
     sys.exit(1)
 finally:
     cursor.close()
     conn.close()
 
+# Creation des tables via SQLAlchemy
+print(f"[*] Creation des tables via SQLAlchemy...")
+try:
+    with app.app_context():
+        db.create_all()
+        # Create test admin user if not exists
+        from models import User
+        if not User.query.filter_by(email='admin@asl3d.com').first():
+            from werkzeug.security import generate_password_hash
+            admin = User(
+                name='Admin ASL3D',
+                email='admin@asl3d.com',
+                password_hash=generate_password_hash('admin123'),
+                role='admin',
+                oauth_provider='local'
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print("[+] Utilisateur admin cree (admin@asl3d.com / admin123)")
+    print("[+] Schema cree avec succes !")
+except Exception as e:
+    print(f"[-] Erreur lors de la creation des tables : {e}")
+    sys.exit(1)
+
 print("""
-╔═══════════════════════════════════════════════╗
-║  ✅ Base de données ASL-3D prête !             ║
-║                                               ║
-║  Maintenant :                                 ║
-║  1. Redémarrez le serveur Flask               ║
-║     → Ctrl+C puis : python run.py             ║
-║  2. Allez sur http://127.0.0.1:5000/register  ║
-║     → Créez votre compte                      ║
-╚═══════════════════════════════════════════════╝
+=================================================
+  [+] Base de donnees PostgreSQL ASL-3D prete !  
+                                                
+  Maintenant :                                  
+  1. Demarrez le serveur Flask                  
+     -> python run.py                           
+  2. Allez sur http://127.0.0.1:5000/login      
+     -> Connectez-vous avec admin@asl3d.com     
+=================================================
 """)

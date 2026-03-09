@@ -11,13 +11,14 @@ from functools import wraps
 
 from flask import (
     Flask, render_template, request, redirect,
-    url_for, flash, session, send_file, send_from_directory
+    url_for, flash, session, send_file, send_from_directory, current_app
 )
+import threading
 from werkzeug.utils import secure_filename
 import numpy as np
 from PIL import Image
 
-from models import db, User, Project, Analysis, Reconstruction, Report
+from models import db, User, Project, Analysis, Reconstruction, Report, TaskStatus
 
 # ── Optional deps (fail gracefully if not installed yet) ──────────────
 try:
@@ -45,17 +46,20 @@ app = Flask(__name__, template_folder='templates', static_folder='static')
 
 # ── Configuration ─────────────────────────────────────────────────────
 app.config.update(
-    SECRET_KEY='asl3d-mysql-2026-secret',
-    SQLALCHEMY_DATABASE_URI='mysql+pymysql://root:Chaimae%402005@localhost/asl3d_db',
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'asl3d-2026-secret'),
+    SQLALCHEMY_DATABASE_URI=os.environ.get('DB_URI', 'postgresql://postgres:admin@localhost/asl3d_db'),
+
 
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     MAX_CONTENT_LENGTH=100 * 1024 * 1024,  # 100 MB
     UPLOAD_BASE=os.path.join('static', 'uploads'),
     OUTPUT_FOLDER='outputs',
+    YOLO_FOLDER=os.path.join('static', 'analyses', 'results'),
 )
 
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 os.makedirs(app.config['UPLOAD_BASE'], exist_ok=True)
+os.makedirs(app.config['YOLO_FOLDER'], exist_ok=True)
 
 db.init_app(app)
 
@@ -433,6 +437,101 @@ def scanner():
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# ROUTE 3b — Nettoyage complet d'un projet
+# ═══════════════════════════════════════════════════════════════════════
+@app.route('/delete_project', methods=['POST'])
+@login_required
+def delete_project():
+    user = current_user()
+    project_id = request.form.get('project_id', type=int)
+
+    if not project_id:
+        flash('ID projet invalide.', 'error')
+        return redirect(url_for('index'))
+
+    project = Project.query.filter_by(id=project_id, user_id=user.id).first()
+    if not project:
+        flash('Projet introuvable ou accès refusé.', 'error')
+        return redirect(url_for('index'))
+
+    import shutil
+    try:
+        # 1. Supprimer le dossier d'upload physique
+        upload_path = os.path.join(app.config['UPLOAD_BASE'], project.upload_folder)
+        if os.path.exists(upload_path):
+            shutil.rmtree(upload_path, ignore_errors=True)
+
+        # 2. Supprimer les fichiers de reconstruction (.glb)
+        for recon in project.reconstructions:
+            if recon.model_file:
+                m_path = os.path.join(app.config['OUTPUT_FOLDER'], recon.model_file)
+                if os.path.exists(m_path):
+                    os.remove(m_path)
+
+        # 3. Supprimer les images d'analyse annotées YOLOv8
+        for ana in project.analyses:
+            if ana.annotated_image:
+                i_path = os.path.join(app.config['YOLO_FOLDER'], ana.annotated_image)
+                if os.path.exists(i_path):
+                    os.remove(i_path)
+
+        # 4. Supprimer les rapports PDF générés
+        for report in project.reports:
+            if report.pdf_path and os.path.exists(report.pdf_path):
+                os.remove(report.pdf_path)
+
+        # 5. Supprimer de la base de données (SQLAlchemy cascade)
+        db.session.delete(project)
+        db.session.commit()
+        flash(f"Le projet '{project.name}' et ses fichiers associés ont été complètement effacés.", "success")
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erreur lors de la suppression : {e}", "error")
+
+    return redirect(url_for('index'))
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# BACKGROUND WORKERS
+# ═══════════════════════════════════════════════════════════════════════
+def bg_reconstruct(app_main, project_id, image_files, quality, task_id):
+    with app_main.app_context():
+        try:
+            from sfm_engine import SfMEngine
+            engine = SfMEngine()
+            model_data = engine.reconstruct(image_files, quality=quality)
+
+            model_filename = f'model_{project_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.glb'
+            model_path = os.path.join(app_main.config['OUTPUT_FOLDER'], model_filename)
+            engine.export_glb(model_data, model_path)
+
+            recon = Reconstruction(
+                project_id=project_id,
+                model_file=model_filename,
+                vertices=len(model_data.get('vertices', [])),
+                faces=len(model_data.get('faces', [])),
+                quality=quality
+            )
+            project = Project.query.get(project_id)
+            if project:
+                project.status = 'en_cours'
+            
+            task = TaskStatus.query.get(task_id)
+            if task:
+                task.status = 'completed'
+            
+            db.session.add(recon)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            task = TaskStatus.query.get(task_id)
+            if task:
+                task.status = 'failed'
+                task.message = str(e)
+                db.session.commit()
+
+# ═══════════════════════════════════════════════════════════════════════
 # ROUTE 4 — Reconstruction 3D
 # ═══════════════════════════════════════════════════════════════════════
 @app.route('/reconstruction', methods=['GET', 'POST'])
@@ -444,6 +543,7 @@ def reconstruction():
     result = None
     selected_project_id = request.args.get('project_id', type=int)
     model_ready = False
+    active_task = None
 
     if request.method == 'POST':
         project_id = request.form.get('project_id', type=int)
@@ -455,6 +555,10 @@ def reconstruction():
             return redirect(url_for('reconstruction'))
 
         upload_path = os.path.join(app.config['UPLOAD_BASE'], project.upload_folder)
+        if not os.path.exists(upload_path):
+            flash("Le dossier d'images de ce projet est introuvable sur le disque.", 'error')
+            return redirect(url_for('reconstruction'))
+            
         image_files = [
             os.path.join(upload_path, f)
             for f in os.listdir(upload_path)
@@ -465,52 +569,110 @@ def reconstruction():
             flash('Au moins 2 images sont requises pour la reconstruction.', 'error')
             return redirect(url_for('reconstruction'))
 
-        try:
-            from sfm_engine import SfMEngine
-            engine = SfMEngine()
-            model_data = engine.reconstruct(image_files, quality=quality)
+        # Check if already running
+        existing_task = TaskStatus.query.filter_by(project_id=project_id, task_type='sfm', status='running').first()
+        if existing_task:
+            flash('Une reconstruction est déjà en cours pour ce projet.', 'info')
+            return redirect(url_for('reconstruction', project_id=project_id))
 
-            # Export .glb
-            model_filename = f'model_{project_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.glb'
-            model_path = os.path.join(app.config['OUTPUT_FOLDER'], model_filename)
-            engine.export_glb(model_data, model_path)
+        # Create Task
+        task = TaskStatus(project_id=project_id, task_type='sfm', status='running')
+        db.session.add(task)
+        db.session.commit()
+        
+        # Start Thread
+        t = threading.Thread(target=bg_reconstruct, args=(current_app._get_current_object(), project_id, image_files, quality, task.id))
+        t.daemon = True
+        t.start()
+        
+        flash('Reconstruction 3D démarrée avec succès en arrière-plan !', 'success')
+        return redirect(url_for('reconstruction', project_id=project_id))
 
-            # Save to DB
-            recon = Reconstruction(
-                project_id=project_id,
-                model_file=model_filename,
-                vertices=len(model_data.get('vertices', [])),
-                faces=len(model_data.get('faces', [])),
-                quality=quality
-            )
-            project.status = 'en_cours'
-            db.session.add(recon)
-            db.session.commit()
-
-            result = recon
-            model_ready = True
-            selected_project_id = project_id
-            flash('Reconstruction 3D terminée !', 'success')
-
-        except Exception as e:
-            flash(f'Erreur lors de la reconstruction : {e}', 'error')
-
-    # Check if there is already a model for the selected project
-    existing_model = None
     if selected_project_id:
+        active_task = TaskStatus.query.filter_by(project_id=selected_project_id, task_type='sfm').order_by(TaskStatus.started_at.desc()).first()
         existing_model = Reconstruction.query.filter_by(
             project_id=selected_project_id
         ).order_by(Reconstruction.created_at.desc()).first()
+        
         if existing_model:
             model_ready = True
+            result = existing_model
 
     return render_template('reconstruction.html',
                            user=user,
                            projects=projects,
-                           result=result or existing_model,
+                           result=result,
                            model_ready=model_ready,
-                           selected_project_id=selected_project_id)
+                           selected_project_id=selected_project_id,
+                           active_task=active_task)
 
+
+def bg_analysis(app_main, project_id, image_path, image_name, task_id):
+    with app_main.app_context():
+        try:
+            from degradation_detector import DegradationDetector
+            detector     = DegradationDetector()
+            image_arr    = np.array(Image.open(image_path).convert('RGB'))
+            degradations = detector.detect(image_arr)
+
+            # count fissures based on detector output
+            crack_count = sum(1 for d in degradations if d.get('type') == 'fissures')
+            
+            # Threshold logic
+            if crack_count < 3:
+                severity, status_update = 'faible', 'Sain'
+                rec_text = "Entretien normal. Pas de fissures majeures détectées."
+            elif crack_count <= 7:
+                severity, status_update = 'moyenne', 'Attention'
+                rec_text = "Surveillance accrue recommandée. Quelques fissures mineures détectées."
+            else:
+                severity, status_update = 'critique', 'Danger'
+                rec_text = "Intervention d'urgence. De nombreuses fissures majeures requièrent une attention immédiate."
+
+            # Compute fallback legacy score based on rules
+            if severity == 'critique':
+                score = min(100, 75 + (crack_count * 2.5))
+            elif severity == 'moyenne':
+                score = 45 + (crack_count * 4)
+            else:
+                score = 15 + (crack_count * 5)
+
+            # Annotated visualization in static/analyses/results/
+            viz_arr = detector.visualize(image_arr, degradations)
+            annotated_name = f'yolo_result_{project_id}_{datetime.now().strftime("%H%M%S")}.png'
+            annotated_path = os.path.join(app_main.config['YOLO_FOLDER'], annotated_name)
+            Image.fromarray(viz_arr).save(annotated_path)
+
+            ana = Analysis(
+                project_id=project_id,
+                source_image=image_name,
+                annotated_image=annotated_name,
+                risk_score=round(score, 2),
+                severity=severity,
+                degradations=degradations,
+                recommendations=rec_text,
+                status_update=status_update
+            )
+            
+            project = Project.query.get(project_id)
+            if status_update == 'Danger':
+                project.status = 'danger'
+            elif status_update == 'Attention' and project.status == 'nouveau':
+                project.status = 'en_cours'
+                
+            task = TaskStatus.query.get(task_id)
+            if task:
+                task.status = 'completed'
+
+            db.session.add(ana)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            task = TaskStatus.query.get(task_id)
+            if task:
+                task.status = 'failed'
+                task.message = str(e)
+                db.session.commit()
 
 # ═══════════════════════════════════════════════════════════════════════
 # ROUTE 5 — Analyse IA (YOLOv8 + Risk Score)
@@ -524,6 +686,7 @@ def analysis():
     result   = None
     gauge    = None
     selected_project_id = request.args.get('project_id', type=int)
+    active_task = None
 
     if request.method == 'POST':
         project_id = request.form.get('project_id', type=int)
@@ -533,69 +696,45 @@ def analysis():
         if not project:
             flash('Projet introuvable.', 'error')
             return redirect(url_for('analysis'))
+            
+        folder = os.path.join(app.config['UPLOAD_BASE'], project.upload_folder)
+        if not os.path.exists(folder):
+            flash("Le dossier d'images de ce projet est introuvable sur le disque.", 'error')
+            return redirect(url_for('analysis'))
 
-        image_path = os.path.join(
-            app.config['UPLOAD_BASE'], project.upload_folder, image_name
-        )
+        if not image_name:
+            # Auto-select first image
+            images = [f for f in os.listdir(folder) if allowed_image(f)]
+            if images:
+                image_name = images[0]
+            else:
+                flash('Aucune image disponible pour l\'analyse.', 'error')
+                return redirect(url_for('analysis', project_id=project_id))
+
         if not os.path.exists(image_path):
             flash('Image introuvable.', 'error')
             return redirect(url_for('analysis'))
 
-        try:
-            from degradation_detector import DegradationDetector
-            detector     = DegradationDetector()
-            image_arr    = np.array(Image.open(image_path).convert('RGB'))
-            degradations = detector.detect(image_arr)
+        # Check if already running
+        existing_task = TaskStatus.query.filter_by(project_id=project_id, task_type='yolo', status='running').first()
+        if existing_task:
+            flash('Une analyse est déjà en cours pour ce projet.', 'info')
+            return redirect(url_for('analysis', project_id=project_id))
 
-            # Compute risk score (0–100)
-            score = _compute_risk_score(degradations)
+        # Create Task
+        task = TaskStatus(project_id=project_id, task_type='yolo', status='running')
+        db.session.add(task)
+        db.session.commit()
+        
+        # Start Thread
+        t = threading.Thread(target=bg_analysis, args=(current_app._get_current_object(), project_id, image_path, image_name, task.id))
+        t.daemon = True
+        t.start()
+        
+        flash('Analyse IA démarrée avec succès en arrière-plan !', 'success')
+        return redirect(url_for('analysis', project_id=project_id))
 
-            # Annotated visualization
-            viz_arr = detector.visualize(image_arr, degradations)
-            annotated_name = f'analysis_{project_id}_{datetime.now().strftime("%H%M%S")}.png'
-            annotated_path = os.path.join(app.config['OUTPUT_FOLDER'], annotated_name)
-            Image.fromarray(viz_arr).save(annotated_path)
-
-            # Severity label
-            if score >= 70:
-                severity, status_update = 'critique', 'Danger'
-            elif score >= 40:
-                severity, status_update = 'haute', 'Attention'
-            elif score >= 20:
-                severity, status_update = 'moyenne', 'Attention'
-            else:
-                severity, status_update = 'faible', 'Sain'
-
-            rec_text = _build_recommendations(degradations)
-
-            # Save to DB
-            ana = Analysis(
-                project_id=project_id,
-                source_image=image_name,
-                annotated_image=annotated_name,
-                risk_score=round(score, 2),
-                severity=severity,
-                degradations=degradations,
-                recommendations=rec_text,
-                status_update=status_update
-            )
-            if status_update == 'Danger':
-                project.status = 'danger'
-            elif status_update == 'Attention' and project.status == 'nouveau':
-                project.status = 'en_cours'
-
-            db.session.add(ana)
-            db.session.commit()
-
-            gauge  = risk_gauge_b64(score)
-            result = ana
-            selected_project_id = project_id
-            flash(f'Analyse terminée — Score de risque : {int(score)}/100', 'success')
-
-        except Exception as e:
-            flash(f'Erreur lors de l\'analyse : {e}', 'error')
-
-    # Load images for selected project
+    # Load data for selected project
     project_images = []
     if selected_project_id:
         proj = Project.query.filter_by(id=selected_project_id, user_id=user.id).first()
@@ -606,13 +745,21 @@ def analysis():
                     f for f in os.listdir(folder) if allowed_image(f)
                 ]
 
+        # Existing analysis for this project
+        active_task = TaskStatus.query.filter_by(project_id=selected_project_id, task_type='yolo').order_by(TaskStatus.started_at.desc()).first()
+        existing_ana = Analysis.query.filter_by(project_id=selected_project_id).order_by(Analysis.created_at.desc()).first()
+        if existing_ana:
+            result = existing_ana
+            gauge  = risk_gauge_b64(existing_ana.risk_score)
+
     return render_template('analysis.html',
                            user=user,
                            projects=projects,
+                           project_images=project_images,
                            result=result,
                            gauge=gauge,
-                           project_images=project_images,
-                           selected_project_id=selected_project_id)
+                           selected_project_id=selected_project_id,
+                           active_task=active_task)
 
 
 def _compute_risk_score(degradations: list) -> float:

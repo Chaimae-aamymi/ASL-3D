@@ -36,7 +36,7 @@ def generate_report(output_path: str, engineer_name: str, project, analysis) -> 
     # ── Annotated image path ────────────────────────────────────────────
     annotated_path = None
     if analysis.annotated_image:
-        ap = os.path.join('outputs', analysis.annotated_image)
+        ap = os.path.join('static', 'analyses', 'results', analysis.annotated_image)
         if os.path.exists(ap):
             annotated_path = ap
 
@@ -140,12 +140,14 @@ def generate_report(output_path: str, engineer_name: str, project, analysis) -> 
     pdf.cell(40, 16, f'  {risk_label}', fill=True)
     pdf.ln(8)
 
+    crack_count = sum(1 for d in (analysis.degradations or []) if d.get('type') == 'fissures')
     pdf.set_text_color(30, 30, 30)
     pdf.set_font('Helvetica', '', 10)
-    pdf.key_value('Modèle IA',   analysis.model_used or 'YOLOv8')
-    pdf.key_value('Sévérité',    (analysis.severity or '').upper())
-    pdf.key_value('Statut',      analysis.status_update or 'N/A')
-    pdf.key_value('Date analyse', analysis.created_at.strftime('%d/%m/%Y %H:%M'))
+    pdf.key_value('Modèle IA',           analysis.model_used or 'YOLOv8')
+    pdf.key_value('Sévérité',            (analysis.severity or '').upper())
+    pdf.key_value('Statut',              analysis.status_update or 'N/A')
+    pdf.key_value('Fissures (YOLOv8)',   str(crack_count))
+    pdf.key_value('Date analyse',        analysis.created_at.strftime('%d/%m/%Y %H:%M'))
 
     # ── Section 4 : Annotated Image ────────────────────────────────────
     if annotated_path:
@@ -180,7 +182,7 @@ def generate_report(output_path: str, engineer_name: str, project, analysis) -> 
     pdf.ln(2)
 
     # ── Section 7 : Conclusions ────────────────────────────────────────
-    pdf.section_title('7. Conclusions')
+    pdf.section_title('7. Recommandation d\'Ingénierie Finale')
     pdf.set_font('Helvetica', '', 10)
     if score >= 70:
         conclusion = (

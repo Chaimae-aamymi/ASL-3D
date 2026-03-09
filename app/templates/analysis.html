@@ -7,6 +7,10 @@
     <title>Analyse IA — ASL-3D</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    {% if active_task and active_task.status == 'running' %}
+    <!-- Auto-refresh every 5s while analysis is running -->
+    <meta http-equiv="refresh" content="5;url=/analysis?project_id={{ selected_project_id }}">
+    {% endif %}
 </head>
 
 <body>
@@ -83,11 +87,38 @@
                                 {% endif %}
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="ph-bold ph-magnifying-glass" style="margin-right:8px;"></i> Lancer l'Analyse IA
+                        <button type="submit" class="btn btn-primary" {% if active_task and
+                            active_task.status=='running' %}disabled{% endif %}>
+                            <i class="ph-bold ph-magnifying-glass" style="margin-right:8px;"></i>
+                            {% if active_task and active_task.status == 'running' %}
+                            Traitement en cours...
+                            {% else %}
+                            Lancer l'Analyse IA
+                            {% endif %}
                         </button>
                     </form>
                 </section>
+
+                <!-- WAITING INDICATOR (meta-refresh active) -->
+                {% if active_task and active_task.status == 'running' %}
+                <div
+                    style="margin-top:2rem;padding:1.5rem;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:14px;text-align:center;">
+                    <i class="ph-duotone ph-hourglass-medium" style="font-size:2.5rem;color:var(--accent);"></i>
+                    <p style="margin-top:0.8rem;font-weight:600;">Analyse IA en cours...</p>
+                    <p style="font-size:0.85rem;color:var(--text-muted);">Détection YOLOv8 par apprentissage profond.
+                        Cette page se rafraîchit automatiquement toutes les 5 secondes.</p>
+                </div>
+                {% endif %}
+
+                <!-- ERROR INDICATOR -->
+                {% if active_task and active_task.status == 'failed' %}
+                <div
+                    style="margin-top:2rem;padding:1.5rem;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:14px;text-align:center;">
+                    <i class="ph-duotone ph-warning-circle" style="font-size:2.5rem;color:var(--danger);"></i>
+                    <p style="margin-top:0.8rem;font-weight:600;color:var(--danger);">Échec de l'analyse IA</p>
+                    <p style="font-size:0.85rem;color:var(--text-muted);">Erreur : {{ active_task.message }}</p>
+                </div>
+                {% endif %}
 
                 {% if result %}
                 <!-- SCORE + GAUGE -->
@@ -153,8 +184,8 @@
                         </div>
                         <div>
                             <h3><i class="ph-duotone ph-scan" style="margin-right:6px;"></i> Dégradations Détectées</h3>
-                            <img src="/outputs/{{ result.annotated_image }}" alt="Annotée"
-                                style="width:100%;max-height:300px;object-fit:contain;border-radius:10px;background:#0d1117;margin-top:0.5rem;">
+                            <img src="/static/analyses/results/{{ result.annotated_image }}" alt="Annotée YOLOv8"
+                                style="width:100%;max-height:300px;object-fit:contain;border-radius:10px;background:#0d1117;margin-top:0.5rem;border: 1px solid rgba(255,255,255,0.1)">
                         </div>
                     </div>
 
@@ -208,7 +239,8 @@
                             <i class="ph-bold ph-clipboard-text" style="margin-right:8px;"></i> Générer Plan de
                             Restauration
                         </a>
-                        <a href="/outputs/{{ result.annotated_image }}" download class="btn btn-secondary">
+                        <a href="/static/analyses/results/{{ result.annotated_image }}" download
+                            class="btn btn-secondary">
                             <i class="ph-bold ph-download-simple" style="margin-right:8px;"></i> Télécharger Image
                             Annotée
                         </a>

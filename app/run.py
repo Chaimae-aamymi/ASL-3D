@@ -19,28 +19,28 @@ if __name__ == '__main__':
     os.makedirs('outputs', exist_ok=True)
     
     print("""
-    ╔═══════════════════════════════════════════════════════════╗
-    ║                                                           ║
-    ║          🏛️  ASL-3D - Démarrage...                 ║
-    ║                                                           ║
-    ║     Restauration Numérique Intelligente de Bâtiments      ║
-    ║                Historiques avec l'IA                      ║
-    ║                                                           ║
-    ║              Créée avec ❤️ par AAMYMI Chaimae           ║
-    ║                                                           ║
-    ╚═══════════════════════════════════════════════════════════╝
+    =============================================================
+    |                                                           |
+    |               ASL-3D - Demarrage...                       |
+    |                                                           |
+    |     Restauration Numerique Intelligente de Batiments      |
+    |                Historiques avec l'IA                      |
+    |                                                           |
+    |              Creee avec passion par AAMYMI Chaimae        |
+    |                                                           |
+    =============================================================
     
-    📱 Ouvrez votre navigateur et allez à:
+    [+] Ouvrez votre navigateur et allez a:
     
        http://127.0.0.1:5000
     
-    ✨ Fonctionnalités:
-       • Scanner 3D Intelligent
-       • Détection IA des Dégradations
-       • Reconstruction 3D
-       • Plan de Restauration
+    [*] Fonctionnalites:
+       - Scanner 3D Intelligent
+       - Detection IA des Degradations
+       - Reconstruction 3D
+       - Plan de Restauration
     
-    Appuyez sur Ctrl+C pour arrêter le serveur.
+    Appuyez sur Ctrl+C pour arreter le serveur.
     """)
     
     # Lancer l'application

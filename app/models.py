@@ -17,9 +17,9 @@ class User(UserMixin, db.Model):
     name           = db.Column(db.String(120), nullable=False)
     email          = db.Column(db.String(180), unique=True, nullable=False)
     password_hash  = db.Column(db.String(255), nullable=True)
-    oauth_provider = db.Column(db.Enum('local', 'google', 'github'), default='local')
+    oauth_provider = db.Column(db.Enum('local', 'google', 'github', name='oauth_providers'), default='local')
     oauth_id       = db.Column(db.String(120), nullable=True)
-    role           = db.Column(db.Enum('admin', 'ingenieur', 'lecteur'), default='ingenieur')
+    role           = db.Column(db.Enum('admin', 'ingenieur', 'lecteur', name='user_roles'), default='ingenieur')
     avatar_url     = db.Column(db.String(255), nullable=True)
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
     last_login     = db.Column(db.DateTime, nullable=True)
@@ -49,7 +49,7 @@ class Project(db.Model):
     location      = db.Column(db.String(255), nullable=True)
     upload_folder = db.Column(db.String(255), nullable=False)
     status        = db.Column(
-        db.Enum('nouveau', 'en_cours', 'termine', 'danger', 'archive'),
+        db.Enum('nouveau', 'en_cours', 'termine', 'danger', 'archive', name='project_statuses'),
         default='nouveau'
     )
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
@@ -58,6 +58,7 @@ class Project(db.Model):
     analyses        = db.relationship('Analysis',       backref='project', lazy=True, cascade='all, delete-orphan')
     reconstructions = db.relationship('Reconstruction', backref='project', lazy=True, cascade='all, delete-orphan')
     reports         = db.relationship('Report',         backref='project', lazy=True, cascade='all, delete-orphan')
+    tasks           = db.relationship('TaskStatus',     backref='project', lazy=True, cascade='all, delete-orphan')
 
     @property
     def latest_analysis(self):
@@ -75,10 +76,10 @@ class Analysis(db.Model):
     source_image     = db.Column(db.String(255), nullable=False)
     annotated_image  = db.Column(db.String(255), nullable=True)
     risk_score       = db.Column(db.Numeric(5, 2), default=0.00)
-    severity         = db.Column(db.Enum('faible', 'moyenne', 'haute', 'critique'), default='faible')
+    severity         = db.Column(db.Enum('faible', 'moyenne', 'haute', 'critique', name='severity_levels'), default='faible')
     degradations     = db.Column(db.JSON, nullable=True)
     recommendations  = db.Column(db.Text, nullable=True)
-    status_update    = db.Column(db.Enum('Sain', 'Attention', 'Danger'), default='Sain')
+    status_update    = db.Column(db.Enum('Sain', 'Attention', 'Danger', name='status_updates'), default='Sain')
     model_used       = db.Column(db.String(100), default='YOLOv8')
     created_at       = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -96,7 +97,7 @@ class Reconstruction(db.Model):
     model_file = db.Column(db.String(255), nullable=False)
     vertices   = db.Column(db.Integer, default=0)
     faces      = db.Column(db.Integer, default=0)
-    quality    = db.Column(db.Enum('low', 'medium', 'high', 'ultra'), default='high')
+    quality    = db.Column(db.Enum('low', 'medium', 'high', 'ultra', name='reconstruction_qualities'), default='high')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
@@ -115,3 +116,18 @@ class Report(db.Model):
 
     def __repr__(self):
         return f'<Report project={self.project_id} pdf={self.pdf_path}>'
+
+
+class TaskStatus(db.Model):
+    __tablename__ = 'task_status'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    task_type  = db.Column(db.Enum('sfm', 'yolo', name='task_types'), nullable=False)
+    status     = db.Column(db.Enum('pending', 'running', 'completed', 'failed', name='task_statuses'), default='pending')
+    message    = db.Column(db.String(255), nullable=True) # Optional error message
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<TaskStatus {self.task_type} project={self.project_id} status={self.status}>'
