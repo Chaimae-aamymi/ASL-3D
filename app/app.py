@@ -437,6 +437,31 @@ def scanner():
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# ROUTE 3a — Gestion des Projets
+# ═══════════════════════════════════════════════════════════════════════
+@app.route('/projects')
+@login_required
+def projects_management():
+    user = current_user()
+    projects = Project.query.filter_by(user_id=user.id).order_by(
+        Project.updated_at.desc()).all()
+    
+    # Statistiques pour la gestion
+    total_projects = len(projects)
+    danger_count   = sum(1 for p in projects if p.status == 'danger')
+    inprogress_count = sum(1 for p in projects if p.status == 'en_cours')
+    completed_count = sum(1 for p in projects if p.status == 'termine')
+
+    return render_template('projects.html',
+                           user=user,
+                           projects=projects,
+                           total_projects=total_projects,
+                           danger_count=danger_count,
+                           inprogress_count=inprogress_count,
+                           completed_count=completed_count)
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # ROUTE 3b — Nettoyage complet d'un projet
 # ═══════════════════════════════════════════════════════════════════════
 @app.route('/delete_project', methods=['POST'])

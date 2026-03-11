@@ -4,19 +4,19 @@ Professional building degradation detection system using Deep Learning (CNN).
 
 ## Features
 
-- 🎯 **Detection**: Identify 6 types of building degradations
-- 📊 **Analysis**: Classification + Semantic Segmentation
-- 🔍 **Localization**: Precise location of affected areas
-- 💾 **Export**: Save analysis results
+- Detection: Identify 6 types of building degradations
+- Analysis: Classification + Semantic Segmentation
+- Localization: Precise location of affected areas
+- Export: Save analysis results
 
 ## Degradation Types
 
-- 🔗 Fissures (Cracks)
-- 💧 Humidité (Humidity)
-- 🪨 Érosion (Erosion)
-- 🍄 Champignons (Fungi)
-- 🎨 Décoloration (Discoloration)
-- 💥 Effritement (Crumbling)
+- Fissures (Cracks)
+- Humidité (Humidity)
+- Érosion (Erosion)
+- Champignons (Fungi)
+- Décoloration (Discoloration)
+- Effritement (Crumbling)
 
 ## Installation
 

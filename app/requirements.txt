@@ -39,3 +39,4 @@ matplotlib>=3.7.0
 # Utilities
 requests>=2.31.0
 python-dotenv>=1.0.0          # For .env config files
+authlib>=1.3.0
