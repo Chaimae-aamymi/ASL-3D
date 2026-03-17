@@ -13,29 +13,36 @@
     <div class="app-wrapper">
         <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div class="sidebar-logo">
+            <div class="sidebar-logo"><span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
                 <h1>ASL-3D</h1>
                 <p class="tagline">Restauration Numérique Intelligente</p>
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
-                <a href="/" class="nav-item"><span class="nav-icon"><i
+                <a href="/" class="nav-item active"><span class="nav-icon"><i
                             class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
                 <a href="/projects" class="nav-item"><span class="nav-icon"><i
                             class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
                 <a href="/scanner" class="nav-item"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
-                <a href="/reconstruction" class="nav-item active"><span class="nav-icon"><i
+                <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
                             class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
                 <a href="/analysis" class="nav-item"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
                 <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
                             class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
+                <a href="/profile" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-user"></i></span><span>Mon Profil</span></a>
             </nav>
             <div class="sidebar-footer">
                 <div
                     style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
+                    {% if user.avatar_url %}
+                    <img src="{{ user.avatar_url }}"
+                        style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--accent);">
+                    {% else %}
                     <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
+                    {% endif %}
                     <div>
                         <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
                         <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>
@@ -79,7 +86,7 @@
                         style="padding:1.5rem;background:var(--bg-card);border-radius:14px;border:1px solid var(--glass-border);">
                         <i class="ph-fill ph-warning-circle" style="font-size:2rem;color:#ff6b6b;"></i>
                         <p
-                            style="font-size:2rem;font-weight:800;margin:0.4rem 0;color:{% if danger_count > 0 %}#ff6b6b{% else %}var(--text-primary){% endif %}">
+                            style="font-size:2rem;font-weight:800;margin:0.4rem 0;color: {{ '#ff6b6b' if danger_count > 0 else 'var(--text-primary)' }};">
                             {{ danger_count }}</p>
                         <p style="font-size:0.85rem;color:var(--text-secondary);">Alertes Critiques</p>
                     </div>
@@ -91,59 +98,95 @@
                     </div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:start;flex-wrap:wrap;">
+                <div class="dashboard-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; align-items: start;">
                     <!-- PROJECTS TABLE -->
-                    <section>
+                    <section style="grid-column: span 2;">
                         <h3 style="margin-bottom:1rem;"><i class="ph-duotone ph-list-bullets"
                                 style="margin-right:8px;"></i>Projets en Course</h3>
                         {% if projects %}
-                        <div style="overflow-x:auto;">
-                            <table style="width:100%;border-collapse:collapse;font-size:0.87rem;">
-                                <thead>
-                                    <tr style="text-align:left;border-bottom:1px solid var(--border);">
-                                        <th style="padding:0.7rem 1rem;color:var(--text-secondary);">Monument</th>
-                                        <th style="padding:0.7rem 1rem;color:var(--text-secondary);">Projet</th>
-                                        <th style="padding:0.7rem 1rem;color:var(--text-secondary);">Statut</th>
-                                        <th style="padding:0.7rem 1rem;color:var(--text-secondary);">Date</th>
-                                        <th style="padding:0.7rem 1rem;color:var(--text-secondary);">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for p in projects %}
-                                    {% set status_color =
-                                    {'nouveau':'#6c63ff','en_cours':'#ffd166','termine':'#06d6a0','danger':'#ff6b6b','archive':'#4a5568'}
-                                    %}
-                                    <tr style="border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s;"
-                                        onmouseover="this.style.background='rgba(255,255,255,0.03)'"
-                                        onmouseout="this.style.background=''">>
-                                        <td style="padding:0.8rem 1rem;font-weight:600;">{{ p.monument }}</td>
-                                        <td style="padding:0.8rem 1rem;color:var(--text-secondary);">{{ p.name }}</td>
-                                        <td style="padding:0.8rem 1rem;">
-                                            <span
-                                                style="padding:0.3rem 0.75rem;border-radius:20px;font-size:0.78rem;font-weight:600;background:{{ status_color.get(p.status,'#4a5568') }}22;color:{{ status_color.get(p.status,'#4a5568') }};">
-                                                {{ p.status.upper() }}
-                                            </span>
-                                        </td>
-                                        <td style="padding:0.8rem 1rem;color:var(--text-muted);">{{
-                                            p.created_at.strftime('%d/%m/%Y') }}</td>
-                                        <td style="padding:0.8rem 1rem; display:flex; gap:0.8rem; align-items:center;">
-                                            <a href="/analysis?project_id={{ p.id }}"
-                                                style="color:var(--accent);text-decoration:none;font-size:0.8rem;">Analyser</a>
-                                            <a href="/reconstruction?project_id={{ p.id }}"
-                                                style="color:var(--accent-2);text-decoration:none;font-size:0.8rem;">3D</a>
-                                            <form action="/delete_project" method="POST" style="margin:0;">
-                                                <input type="hidden" name="project_id" value="{{ p.id }}">
-                                                <button type="submit"
-                                                    style="background:transparent;border:none;color:#ff6b6b;padding:0;font-size:1rem;cursor:pointer;"
-                                                    title="Supprimer le projet">
-                                                    <i class="ph-bold ph-trash"></i>
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                        <div class="card" style="padding: 0; overflow: hidden; border: 1px solid var(--glass-border);">
+                            <div style="overflow-x:auto;">
+                                <table style="width:100%; border-collapse: collapse; font-size: 0.87rem;">
+                                    <thead>
+                                        <tr
+                                            style="text-align: left; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);">
+                                            <th
+                                                style="padding: 1.2rem 1rem; color: var(--text-secondary); font-weight: 600; min-width: 200px;">
+                                                MONUMENT</th>
+                                            <th
+                                                style="padding: 1.2rem 1rem; color: var(--text-secondary); font-weight: 600; min-width: 180px;">
+                                                NOM DU PROJET</th>
+                                            <th
+                                                style="padding: 1.2rem 1rem; color: var(--text-secondary); font-weight: 600; min-width: 140px;">
+                                                STATUT</th>
+                                            <th
+                                                style="padding: 1.2rem 1rem; color: var(--text-secondary); font-weight: 600; min-width: 120px;">
+                                                CRÉÉ LE</th>
+                                            <th
+                                                style="padding: 1.2rem 1rem; color: var(--text-secondary); font-weight: 600; text-align: right; min-width: 150px;">
+                                                ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for p in projects %}
+                                        {% set status_color = {'nouveau':'#6c63ff', 'en_cours':'#ffd166',
+                                        'termine':'#06d6a0', 'danger':'#ff6b6b', 'archive':'#4a5568'} %}
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); transition: all 0.2s ease; cursor: pointer;"
+                                            onmouseover="this.style.background='rgba(255,255,255,0.03)'"
+                                            onmouseout="this.style.background=''"
+                                            onclick="window.location.href='/analysis?project_id={{ p.id }}'">
+                                            <td style="padding: 1.2rem 1rem;">
+                                                <div style="display: flex; align-items: center; gap: 0.8rem;">
+                                                    <div
+                                                        style="width: 36px; height: 36px; border-radius: 10px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;">
+                                                        <i class="ph-bold ph-bank" style="font-size: 1.1rem;"></i>
+                                                    </div>
+                                                    <span
+                                                        style="font-weight: 600; color: var(--text-primary); white-space: nowrap;">{{
+                                                        p.monument }}</span>
+                                                </div>
+                                            </td>
+                                            <td
+                                                style="padding: 1.2rem 1rem; color: var(--text-secondary); white-space: nowrap;">
+                                                {{ p.name }}</td>
+                                            <td style="padding: 1.2rem 1rem;">
+                                                <span
+                                                    style="padding: 0.4rem 0.9rem; border-radius: 8px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: {{ status_color.get(p.status,'#4a5568') }}15; color: {{ status_color.get(p.status,'#4a5568') }}; border: 1px solid {{ status_color.get(p.status,'#4a5568') }}30; white-space: nowrap;">
+                                                    {{ p.status.replace('_', ' ') }}
+                                                </span>
+                                            </td>
+                                            <td
+                                                style="padding: 1.2rem 1rem; color: var(--text-muted); white-space: nowrap;">
+                                                {{ p.created_at.strftime('%d %b %Y') }}</td>
+                                            <td style="padding: 1.1rem 1rem; text-align: right;">
+                                                <div style="display: inline-flex; gap: 0.5rem; justify-content: flex-end;"
+                                                    onclick="event.stopPropagation();">
+                                                    <a href="/project/{{ p.id }}" class="btn-icon" title="Détails"
+                                                        style="padding: 0.4rem; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--text-secondary); text-decoration: none;">
+                                                        <i class="ph-bold ph-eye"></i>
+                                                    </a>
+                                                    <a href="/reconstruction?project_id={{ p.id }}" class="btn-icon"
+                                                        title="Reconstruction 3D"
+                                                        style="padding: 0.4rem; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--accent-2); text-decoration: none;">
+                                                        <i class="ph-bold ph-cube"></i>
+                                                    </a>
+                                                    <form action="/delete_project" method="POST"
+                                                        style="margin: 0; display: inline;">
+                                                        <input type="hidden" name="project_id" value="{{ p.id }}">
+                                                        <button type="submit" class="btn-icon"
+                                                            style="background: rgba(255,107,107,0.1); border: none; color: #ff6b6b; padding: 0.4rem; border-radius: 8px; cursor: pointer;"
+                                                            title="Supprimer">
+                                                            <i class="ph-bold ph-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         {% else %}
                         <div
@@ -159,12 +202,17 @@
 
                     <!-- PIE CHART -->
                     {% if pie_chart %}
-                    <div style="text-align:center;min-width:180px;">
-                        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem;">Répartition Risques
-                        </p>
-                        <img src="{{ pie_chart }}" alt="Répartition des risques"
-                            style="width:180px;border-radius:12px;">
-                    </div>
+                    <section>
+                        <h3 style="margin-bottom:1rem;"><i class="ph-duotone ph-chart-pie"
+                                style="margin-right:8px;"></i>Aperçu Global</h3>
+                        <div class="card" style="text-align:center; padding: 2rem;">
+                            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem;">Distribution
+                                des Risques</p>
+                            <img src="{{ pie_chart }}" alt="Répartition des risques"
+                                style="width:100%; max-width:220px; border-radius:12px;">
+                        </div>
+                    </section>
+
                     {% endif %}
                 </div>
 

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Profil — ASL-3D</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
+                <h1>ASL-3D</h1>
+                <p class="tagline">Restauration Numérique Intelligente</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <span class="nav-label">Navigation</span>
+                <a href="/" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
+                <a href="/projects" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
+                <a href="/scanner" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
+                <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
+                <a href="/analysis" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
+                <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div
+                    style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
+                    {% if user.avatar_url %}
+                    <img src="{{ user.avatar_url }}"
+                        style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--accent);">
+                    {% else %}
+                    <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
+                    {% endif %}
+                    <div>
+                        <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
+                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>
+                    </div>
+                </div>
+                <a href="/logout" title="Déconnexion"
+                    style="display:flex;align-items:center;gap:0.5rem;color:var(--text-muted);font-size:0.8rem;text-decoration:none;">
+                    <i class="ph-bold ph-sign-out"></i> Déconnexion
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-wrapper">
+            <header class="page-header">
+                <div>
+                    <h2>Mon Profil</h2>
+                    <p style="color:var(--text-muted);">Gérez vos informations personnelles et votre sécurité</p>
+                </div>
+                <div class="header-actions">
+                    <a href="/profile" class="nav-item active"
+                        style="background:var(--accent-gradient); color:white; border-radius:10px; padding:0.6rem 1rem;">
+                        <i class="ph-bold ph-user" style="margin-right:8px;"></i> Profil
+                    </a>
+                </div>
+            </header>
+
+            <div class="page-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}"
+                    style="margin-bottom:1.5rem; padding:1rem; border-radius:10px; background:{{ '#06d6a022' if category=='success' else '#ff6b6b22' }}; color:{{ '#06d6a0' if category=='success' else '#ff6b6b' }}; border:1px solid {{ '#06d6a044' if category=='success' else '#ff6b6b44' }};">
+                    {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:2rem;">
+
+                    <!-- INFORMATIONS PERSONNELLES -->
+                    <section class="card">
+                        <h3 style="margin-bottom:1.5rem;"><i class="ph-duotone ph-user-circle"
+                                style="margin-right:10px; color:var(--accent);"></i>Informations Personnelles</h3>
+
+                        <form action="/profile" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="action" value="update_info">
+
+                            <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:2rem;">
+                                <div
+                                    style="width:100px; height:100px; border-radius:50%; border:3px solid var(--accent); overflow:hidden; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; margin-bottom:1rem;">
+                                    {% if user.avatar_url %}
+                                    <img src="{{ user.avatar_url }}" style="width:100%; height:100%; object-fit:cover;">
+                                    {% else %}
+                                    <i class="ph-fill ph-user-circle"
+                                        style="font-size:4rem; color:var(--text-muted);"></i>
+                                    {% endif %}
+                                </div>
+                                <label class="btn"
+                                    style="background:rgba(255,255,255,0.05); border:1px solid var(--border); cursor:pointer; font-size:0.8rem;">
+                                    <i class="ph-bold ph-camera" style="margin-right:8px;"></i> Changer Photo
+                                    <input type="file" name="avatar" accept="image/*" style="display:none;">
+                                </label>
+                            </div>
+
+                            <div style="margin-bottom:1.2rem;">
+                                <label
+                                    style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-secondary);">Nom
+                                    Complet</label>
+                                <input type="text" name="name" value="{{ user.name }}" required
+                                    style="width:100%; padding:0.8rem; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; color:white; outline:none;">
+                            </div>
+
+                            <div style="margin-bottom:1.2rem;">
+                                <label
+                                    style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-secondary);">Adresse
+                                    Email</label>
+                                <input type="email" name="email" value="{{ user.email }}" required
+                                    style="width:100%; padding:0.8rem; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; color:white; outline:none;">
+                            </div>
+
+                            <div style="margin-bottom:1.5rem;">
+                                <label
+                                    style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-secondary);">Rôle
+                                    / Poste</label>
+                                <div
+                                    style="padding:0.8rem; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px; color:var(--text-muted);">
+                                    {{ user.role.capitalize() }}
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width:100%;">
+                                Mettre à jour les informations
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- SÉCURITÉ / MOT DE PASSE -->
+                    <section class="card">
+                        <h3 style="margin-bottom:1.5rem;"><i class="ph-duotone ph-shield-check"
+                                style="margin-right:10px; color:var(--accent-2);"></i>Sécurité du Compte</h3>
+
+                        {% if user.oauth_provider == 'local' %}
+                        <form action="/profile" method="POST">
+                            <input type="hidden" name="action" value="change_password">
+
+                            <div style="margin-bottom:1.2rem;">
+                                <label
+                                    style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-secondary);">Ancien
+                                    Mot de Passe</label>
+                                <input type="password" name="old_password" required
+                                    style="width:100%; padding:0.8rem; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; color:white; outline:none;">
+                            </div>
+
+                            <div style="margin-bottom:1.2rem;">
+                                <label
+                                    style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-secondary);">Nouveau
+                                    Mot de Passe</label>
+                                <input type="password" name="new_password" required
+                                    style="width:100%; padding:0.8rem; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; color:white; outline:none;">
+                            </div>
+
+                            <div style="margin-bottom:1.5rem;">
+                                <label
+                                    style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-secondary);">Confirmer
+                                    Nouveau Mot de Passe</label>
+                                <input type="password" name="confirm_password" required
+                                    style="width:100%; padding:0.8rem; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; color:white; outline:none;">
+                            </div>
+
+                            <button type="submit" class="btn btn-secondary" style="width:100%;">
+                                Changer le mot de passe
+                            </button>
+                        </form>
+                        {% else %}
+                        <div
+                            style="text-align:center; padding:2rem; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid var(--border);">
+                            <i class="ph-duotone ph-{{ user.oauth_provider }}"
+                                style="font-size:3rem; color:var(--accent); margin-bottom:1rem;"></i>
+                            <p>Vous êtes connecté via <strong>{{ user.oauth_provider.capitalize() }}</strong>.</p>
+                            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.5rem;">La gestion du mot
+                                de passe se fait via votre compte externe.</p>
+                        </div>
+                        {% endif %}
+                    </section>
+
+                </div>
+
+                <div class="card" style="margin-top:2rem; border-top: 3px solid #ff6b6b22;">
+                    <h4 style="color:#ff6b6b; margin-bottom:0.5rem;">Zone de Danger</h4>
+                    <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">La suppression de votre
+                        compte est irréversible et supprimera tous vos projets.</p>
+                    <button class="btn"
+                        style="background:transparent; border:1px solid #ff6b6b44; color:#ff6b6b; font-size:0.8rem;">
+                        Désactiver mon compte
+                    </button>
+                </div>
+            </div>
+
+            <footer class="footer">
+                <div class="footer-content">
+                    <p>&copy; 2026 ASL-3D</p>
+                    <p class="creator-credit">Propulsé par le moteur YOLOv8 & SfM</p>
+                </div>
+            </footer>
+        </main>
+    </div>
+</body>
+
+</html>

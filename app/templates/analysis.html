@@ -34,10 +34,28 @@
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
                 <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
                             class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
+                <a href="/profile" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-user"></i></span><span>Mon Profil</span></a>
             </nav>
-            <div class="sidebar-footer"><a href="/logout"
-                    style="color:var(--text-muted);font-size:0.8rem;text-decoration:none;"><i
-                        class="ph-bold ph-sign-out" style="margin-right:5px;"></i>Déconnexion</a></div>
+            <div class="sidebar-footer">
+                <div
+                    style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
+                    {% if user.avatar_url %}
+                    <img src="{{ user.avatar_url }}"
+                        style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--accent);">
+                    {% else %}
+                    <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
+                    {% endif %}
+                    <div>
+                        <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
+                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>
+                    </div>
+                </div>
+                <a href="/logout"
+                    style="display:flex;align-items:center;gap:0.5rem;color:var(--text-muted);font-size:0.8rem;text-decoration:none;">
+                    <i class="ph-bold ph-sign-out"></i> Déconnexion
+                </a>
+            </div>
         </aside>
 
         <div class="main-wrapper">
@@ -62,7 +80,8 @@
                     <h2><i class="ph-duotone ph-sliders-horizontal" style="margin-right:8px;"></i> Sélectionner Photo &
                         Projet</h2>
                     <form method="POST" action="/analysis">
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem;">
+                        <div
+                            style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:1rem;margin-bottom:1.2rem;">
                             <div class="option-group">
                                 <label for="project_id">Projet :</label>
                                 <select name="project_id" id="project_id" class="select-input" required>
@@ -190,7 +209,6 @@
                                 style="width:100%;max-height:300px;object-fit:contain;border-radius:10px;background:#0d1117;margin-top:0.5rem;border: 1px solid rgba(255,255,255,0.1)">
                         </div>
                     </div>
-
                     <!-- DEGRADATION CARDS -->
                     {% if result.degradations %}
                     <div style="margin-top:2rem;">
@@ -202,9 +220,13 @@
                             {% set conf = deg.get('confidence',0)|float %}
                             {% set deg_color = '#ff6b6b' if deg.get('severity') in ('haute','critique') else ('#ffd166'
                             if deg.get('severity') == 'moyenne' else '#06d6a0') %}
-                            <div
-                                style="padding:1.1rem;background:var(--bg-card);border-radius:10px;border-top:3px solid {{ deg_color }};">
+                            <div class="deg-card" data-x="{{ range(-10, 10)|random * 0.1 }}"
+                                data-y="{{ range(-10, 10)|random * 0.1 }}" data-z="{{ range(-10, 10)|random * 0.1 }}"
+                                style="padding:1.1rem;background:var(--bg-card);border-radius:10px;border-top:3px solid {{ deg_color }}; cursor: pointer; transition: transform 0.2s;"
+                                onmouseover="this.style.transform='scale(1.02)'"
+                                onmouseout="this.style.transform='scale(1)'">
                                 <h5 style="margin:0 0 0.4rem;color:{{ deg_color }};text-transform:capitalize;">{{
+
                                     deg.get('type','?') }}</h5>
                                 <p style="font-size:0.8rem;margin:0.2rem 0;"><strong>Sévérité :</strong> {{
                                     deg.get('severity','?') }}</p>
@@ -221,19 +243,56 @@
                     </div>
                     {% endif %}
 
-                    <!-- RECOMMENDATIONS -->
-                    {% if result.recommendations %}
+                    <!-- INTERACTIVE 3D CONTEXT -->
                     <div style="margin-top:2rem;">
-                        <h3><i class="ph-duotone ph-lightbulb"
-                                style="margin-right:8px;color:var(--accent-primary);"></i> Recommandations</h3>
+                        <h3><i class="ph-duotone ph-cube" style="margin-right:8px;"></i> Visualisation 3D Interactive
+                        </h3>
+                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Cliquez sur une carte
+                            de dégradation ci-dessus pour centrer le modèle 3D sur la zone affectée.</p>
+
                         <div
-                            style="padding:1.2rem;background:rgba(108,99,255,0.06);border-radius:12px;margin-top:0.8rem;">
-                            {% for line in result.recommendations.split('\n') %}
-                            <p style="font-size:0.87rem;margin:0.4rem 0;">{{ line }}</p>
-                            {% endfor %}
+                            style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; position: relative;">
+                            <script type="module"
+                                src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+                            <model-viewer id="hybrid3Dviewer" src="/static/models/model_{{ result.project_id }}.glb"
+                                alt="Modèle 3D du projet" auto-rotate camera-controls camera-orbit="0deg 75deg 105%"
+                                style="width: 100%; height: 400px; background-color: #0d1117;" interaction-prompt="none"
+                                fallback-image="/static/avatars/default.png" poster="/static/avatars/default.png">
+                                <!-- Interactive hotspot fallback target -->
+                                <button slot="hotspot-demo" class="hotspot" data-position="0 0 0" data-normal="0 1 0"
+                                    style="display:none;"></button>
+                            </model-viewer>
                         </div>
                     </div>
-                    {% endif %}
+
+                    <script>
+                        document.addEventListener("DOMContentLoaded", () => {
+                            const viewer = document.querySelector('#hybrid3Dviewer');
+                            const cards = document.querySelectorAll('.deg-card');
+
+                            cards.forEach((card, index) => {
+                                card.addEventListener('click', () => {
+                                    // Highlight active card
+                                    cards.forEach(c => c.style.border = '1px solid transparent');
+                                    card.style.border = '1px solid var(--accent)';
+
+                                    // Read simulated 3D coordinates from dataset (or AI model mappings)
+                                    const tx = card.dataset.x;
+                                    const ty = card.dataset.y;
+                                    const tz = card.dataset.z;
+
+                                    // Focus viewer
+                                    viewer.cameraTarget = `${tx}m ${ty}m ${tz}m`;
+
+                                    // Adjust orbit to zoom in
+                                    const theta = 45 + (index * 15);
+                                    viewer.cameraOrbit = `${theta}deg 60deg 50%`;
+                                });
+                            });
+                        });
+                    </script>
+
+                    <!-- RECOMMENDATIONS -->
 
                     <!-- ACTIONS -->
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem;">

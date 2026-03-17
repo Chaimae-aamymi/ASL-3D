@@ -182,7 +182,7 @@
     <div class="app-wrapper">
         <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div class="sidebar-logo">
+            <div class="sidebar-logo"><span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
                 <h1>ASL-3D</h1>
                 <p class="tagline">Restauration Numérique Intelligente</p>
             </div>
@@ -200,11 +200,18 @@
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
                 <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
                             class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
+                <a href="/profile" class="nav-item"><span class="nav-icon"><i
+                            class="ph-duotone ph-user"></i></span><span>Mon Profil</span></a>
             </nav>
             <div class="sidebar-footer">
                 <div
                     style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
+                    {% if user.avatar_url %}
+                    <img src="{{ user.avatar_url }}"
+                        style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--accent);">
+                    {% else %}
                     <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
+                    {% endif %}
                     <div>
                         <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
                         <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>

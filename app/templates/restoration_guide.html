@@ -31,9 +31,20 @@
                 <a href="/restoration-guide" class="nav-item active"><span class="nav-icon"><i
                             class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
             </nav>
-            <div class="sidebar-footer"><a href="/logout"
-                    style="color:var(--text-muted);font-size:0.8rem;text-decoration:none;"><i
-                        class="ph-bold ph-sign-out" style="margin-right:5px;"></i>Déconnexion</a></div>
+            <div class="sidebar-footer">
+                <div
+                    style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
+                    <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
+                    <div>
+                        <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
+                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>
+                    </div>
+                </div>
+                <a href="/logout"
+                    style="display:flex;align-items:center;gap:0.5rem;color:var(--text-muted);font-size:0.8rem;text-decoration:none;">
+                    <i class="ph-bold ph-sign-out"></i> Déconnexion
+                </a>
+            </div>
         </aside>
 
         <div class="main-wrapper">

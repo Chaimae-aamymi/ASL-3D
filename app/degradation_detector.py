@@ -15,6 +15,11 @@ except ImportError:
         models = None
 import json
 from pathlib import Path
+from datetime import datetime
+try:
+    from ultralytics import YOLO
+except ImportError:
+    YOLO = None
 from icons import Icons, IconColors, IconText
 
 class DegradationDetector:
@@ -140,8 +145,10 @@ class DegradationDetector:
     @classmethod
     def _get_yolo(cls):
         if cls._yolo_model is None:
+            if YOLO is None:
+                cls._yolo_model = False
+                return None
             try:
-                from ultralytics import YOLO
                 # Use the nano model for speed; auto-downloads on first use
                 cls._yolo_model = YOLO('yolov8n.pt')
             except Exception as e:
@@ -166,11 +173,20 @@ class DegradationDetector:
         Falls back to traditional detection if YOLOv8 is unavailable.
         """
         model = self._get_yolo()
+        # Scale down for inference if too large
+        h, w = image_array.shape[:2]
+        if max(h, w) > 1024:
+            scale = 1024 / max(h, w)
+            proc_img = cv2.resize(image_array, (int(w * scale), int(h * scale)))
+        else:
+            proc_img = image_array
+
         if model is None:
-            return self._traditional_detection(image_array)
+            return self._traditional_detection(proc_img)
 
         try:
-            results = model.predict(image_array, verbose=False, conf=0.25)
+            # Use fixed imgsz for much faster inference
+            results = model.predict(proc_img, imgsz=640, verbose=False, conf=0.25)
             degradations = []
             for r in results:
                 for box in r.boxes:
@@ -181,17 +197,78 @@ class DegradationDetector:
                         deg_type = 'fissures'
                     conf = float(box.conf[0])
                     info = self.degradation_types.get(deg_type, {})
+                    
+                    # Convert xyxy [x1, y1, x2, y2] to [x, y, w, h]
+                    x1, y1, x2, y2 = box.xyxy[0].tolist()
+                    
                     degradations.append({
                         'type': deg_type,
                         'severity': info.get('severity', 'moyenne'),
                         'confidence': round(conf, 3),
-                        'bbox': box.xyxy[0].tolist() if box.xyxy is not None else [],
+                        'location': {
+                            'x': int(x1),
+                            'y': int(y1),
+                            'width': int(x2 - x1),
+                            'height': int(y2 - y1)
+                        },
+                        'area': float((x2 - x1) * (y2 - y1))
                     })
             # If YOLOv8 found nothing, supplement with traditional
             return degradations if degradations else self._traditional_detection(image_array)
         except Exception as e:
             print(f"[YOLOv8] Inference error: {e}")
             return self._traditional_detection(image_array)
+
+    def _traditional_detection(self, image_array):
+        """Détection de secours basée sur des techniques de vision par ordinateur classiques (OpenCV)"""
+        if len(image_array.shape) == 3:
+            gray = cv2.cvtColor(image_array, cv2.COLOR_RGB2GRAY)
+        else:
+            gray = image_array
+            
+        # Détection de fissures par Canny
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        edges = cv2.Canny(blurred, 50, 150)
+        
+        # Dilatation pour relier les segments de fissures
+        kernel = np.ones((3,3), np.uint8)
+        edges = cv2.dilate(edges, kernel, iterations=1)
+        
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        degradations = []
+        h, w = image_array.shape[:2]
+        
+        # Filtrer et ajouter les dégradations détectées
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area > 100:  # Ignorer le bruit
+                x, y, bw, bh = cv2.boundingRect(cnt)
+                
+                # Heuristique simple : fissures si longiligne, sinon érosion/effritement
+                aspect_ratio = float(bw)/bh if bh > 0 else 0
+                if aspect_ratio > 4 or aspect_ratio < 0.25:
+                    deg_type = 'fissures'
+                    conf = 0.6
+                else:
+                    deg_type = 'effritement'
+                    conf = 0.45
+                
+                degradations.append({
+                    'type': deg_type,
+                    'location': {
+                        'x': int(x),
+                        'y': int(y),
+                        'width': int(bw),
+                        'height': int(bh)
+                    },
+                    'severity': self.degradation_types[deg_type]['severity'],
+                    'confidence': conf,
+                    'area': float(area)
+                })
+        
+        # Limiter à 15 dégradations max pour ne pas encombrer
+        return sorted(degradations, key=lambda x: x['area'], reverse=True)[:15]
 
     def detect(self, image_array):
         """
@@ -348,11 +425,26 @@ class DegradationDetector:
     
     def visualize(self, image_array, degradations):
         """Créer une visualisation des dégradations détectées"""
-        visualization = image_array.copy()
-        
-        # Redimensionner si nécessaire
-        if visualization.shape[:2] != (256, 256):
-            visualization = cv2.resize(visualization, (256, 256))
+        # Optimized visualization: use a reasonably sized canvas
+        h, w = image_array.shape[:2]
+        target_size = 640
+        if max(h, w) > target_size:
+            scale = target_size / max(h, w)
+            visualization = cv2.resize(image_array, (int(w * scale), int(h * scale)))
+            # Adjust degradation coordinates to new scale
+            display_degradations = []
+            for d in degradations:
+                new_d = d.copy()
+                new_d['location'] = {
+                    'x': int(d['location']['x'] * scale),
+                    'y': int(d['location']['y'] * scale),
+                    'width': int(d['location']['width'] * scale),
+                    'height': int(d['location']['height'] * scale)
+                }
+                display_degradations.append(new_d)
+        else:
+            visualization = image_array.copy()
+            display_degradations = degradations
         
         for degradation in degradations:
             loc = degradation['location']

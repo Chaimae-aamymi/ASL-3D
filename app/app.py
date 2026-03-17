@@ -1,7 +1,3 @@
-"""
-app.py — ASL-3D Main Application
-Stack: Flask + MySQL (XAMPP) + YOLOv8 + fpdf2 + Pure HTML/CSS
-"""
 import os
 import io
 import json
@@ -20,7 +16,7 @@ from PIL import Image
 
 from models import db, User, Project, Analysis, Reconstruction, Report, TaskStatus
 
-# ── Optional deps (fail gracefully if not installed yet) ──────────────
+#  Optional deps (fail gracefully if not installed yet) 
 try:
     import matplotlib
     matplotlib.use('Agg')
@@ -41,10 +37,10 @@ try:
 except ImportError:
     FPDF_AVAILABLE = False
 
-# ── App Factory ────────────────────────────────────────────────────────
+#  App Factory 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
-# ── Configuration ─────────────────────────────────────────────────────
+#  Configuration 
 app.config.update(
     SECRET_KEY=os.environ.get('SECRET_KEY', 'asl3d-2026-secret'),
     SQLALCHEMY_DATABASE_URI=os.environ.get('DB_URI', 'postgresql://postgres:admin@localhost/asl3d_db'),
@@ -55,11 +51,13 @@ app.config.update(
     UPLOAD_BASE=os.path.join('static', 'uploads'),
     OUTPUT_FOLDER='outputs',
     YOLO_FOLDER=os.path.join('static', 'analyses', 'results'),
+    AVATAR_FOLDER=os.path.join('static', 'avatars'),
 )
 
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 os.makedirs(app.config['UPLOAD_BASE'], exist_ok=True)
 os.makedirs(app.config['YOLO_FOLDER'], exist_ok=True)
+os.makedirs(app.config['AVATAR_FOLDER'], exist_ok=True)
 
 db.init_app(app)
 
@@ -195,10 +193,64 @@ def register():
 
 
 @app.route('/logout')
+@login_required
 def logout():
     session.clear()
     flash('Vous avez été déconnecté.', 'success')
     return redirect(url_for('login'))
+
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    user = current_user()
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'update_info':
+            name = request.form.get('name')
+            email = request.form.get('email')
+            avatar_file = request.files.get('avatar')
+            
+            # Avatar Upload
+            if avatar_file and avatar_file.filename != '':
+                if allowed_image(avatar_file.filename):
+                    ext = avatar_file.filename.rsplit('.', 1)[1].lower()
+                    filename = f"user_{user.id}_{int(datetime.utcnow().timestamp())}.{ext}"
+                    filepath = os.path.join(app.config['AVATAR_FOLDER'], filename)
+                    avatar_file.save(filepath)
+                    user.avatar_url = f"/static/avatars/{filename}"
+                else:
+                    flash('Format d\'image non supporté.', 'error')
+
+            # Simple validation: email must look valid-ish
+            if not name or not email or '@' not in email:
+                flash('Nom ou email invalide.', 'error')
+            else:
+                user.name = name
+                user.email = email
+                db.session.commit()
+                flash('Profil mis à jour !', 'success')
+                
+        elif action == 'change_password':
+            old_p = request.form.get('old_password')
+            new_p = request.form.get('new_password')
+            conf_p = request.form.get('confirm_password')
+            
+            if not user.check_password(old_p):
+                flash('Ancien mot de passe incorrect.', 'error')
+            elif new_p != conf_p:
+                flash('Les nouveaux mots de passe ne correspondent pas.', 'error')
+            elif len(new_p) < 6:
+                flash('Le mot de passe doit faire au moins 6 caractères.', 'error')
+            else:
+                user.set_password(new_p)
+                db.session.commit()
+                flash('Mot de passe mis à jour !', 'success')
+                
+        return redirect(url_for('profile'))
+
+    return render_template('profile.html', user=user)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -736,6 +788,7 @@ def analysis():
                 flash('Aucune image disponible pour l\'analyse.', 'error')
                 return redirect(url_for('analysis', project_id=project_id))
 
+        image_path = os.path.join(folder, image_name)
         if not os.path.exists(image_path):
             flash('Image introuvable.', 'error')
             return redirect(url_for('analysis'))

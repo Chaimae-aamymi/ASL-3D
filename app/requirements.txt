@@ -1,8 +1,4 @@
-# ==============================================================
 # ASL-3D — Requirements
-# Python 3.10 | Flask | MySQL (XAMPP) | YOLOv8 | fpdf2
-# Install: pip install -r requirements.txt
-# ==============================================================
 
 # Web framework
 Flask==2.3.3
