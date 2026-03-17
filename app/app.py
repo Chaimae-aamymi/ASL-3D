@@ -88,7 +88,9 @@ def pie_chart_b64(sain: int, danger: int) -> str:
         return ''
     fig, ax = plt.subplots(figsize=(3.5, 3.5))
     fig.patch.set_facecolor('#151b28')
-    sizes  = [max(sain, 0), max(danger, 0)] or [1, 0]
+    sizes  = [max(sain, 0), max(danger, 0)]
+    if sum(sizes) == 0:
+        sizes = [1, 0] # Avoid NaN if there are 0 projects
     labels = ['Sain', 'Dégradé']
     colors = ['#06d6a0', '#ff6b6b']
     wedge_props = {'linewidth': 2, 'edgecolor': '#151b28'}
