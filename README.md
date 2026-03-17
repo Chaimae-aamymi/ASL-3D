@@ -11,10 +11,12 @@ L'architecture a ete entierement repensee pour etre robuste, securisee, et gener
 - **Architecture SSR (Zero JavaScript)** : 100% du rendu est gere par Flask (Jinja2) avec un rafraichissement natif HTML pour les taches en arriere-plan.
 - **Base de Donnees PostgreSQL** : Sauvegarde des utilisateurs, projets, analyses, historique des taches (`TaskStatus`) et rapports professionnels via `SQLAlchemy`.
 - **Traitement Asynchrone Local** : Execution native de l'IA et de la modelisation 3D en arriere-plan (`threading.Thread`) sans bloquer l'interface utilisateur.
-- **Authentification OAuth2** : Connexion securisee avec email/mot de passe, **Google**, ou **GitHub** (`Authlib`).
+- **Authentification OAuth2 & Profil** : Connexion securisee avec email/mot de passe, **Google**, ou **GitHub** (`Authlib`). Gestion de profil utilisateur avec upload d'avatar dynamique.
 - **Detection IA Avancee** : Utilisation de **YOLOv8** pour la detection fine des **fissures** (boites de delimitation), avec logique de diagnostic automatisee (Seuils de Tolerance) pour evaluer la severite du risque.
+- **Approche Hybride 2D/3D** : Integration experimentale permettant la visualisation combinee des resultats d'analyse 2D (YOLOv8) interactifs associes directement au jumeau numerique 3D spatial (via `model-viewer`).
 - **Gestion Stricte du Stockage** : Nettoyage physique intelligent du serveur (photos, `.glb`, PDFs, images annotees) lors de la suppression d'un projet (`shutil.rmtree`).
 - **Reconstruction 3D Native** : Moteur Structure-from-Motion (SfM) en Python (OpenCV SIFT + trimesh) exportant des fichiers `.glb` affiches via `<model-viewer>`.
+- **Interface Utilisateur Premium** : Tableau de bord repense avec un design interactif, moderne et immersif (Glassmorphism, indicateurs visuels de risques).
 - **Generation de Rapports PDF** : Creation de dossiers de restauration complets (`fpdf2`) integrant le comptage des fissures détectees par YOLOv8 et des recommandations d'ingenierie dynamiques.
 
 ## Stack Technique
