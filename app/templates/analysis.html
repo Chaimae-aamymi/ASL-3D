@@ -7,10 +7,6 @@
     <title>Analyse IA — ASL-3D</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    {% if active_task and active_task.status == 'running' %}
-    <!-- Auto-refresh every 5s while analysis is running -->
-    <meta http-equiv="refresh" content="5;url=/analysis?project_id={{ selected_project_id }}">
-    {% endif %}
 </head>
 
 <body>
@@ -22,49 +18,51 @@
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
-                <a href="/" class="nav-item"><span class="nav-icon"><i
+                <a href="/" class="nav-item" title="Tableau de bord"><span class="nav-icon"><i
                             class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
-                <a href="/projects" class="nav-item"><span class="nav-icon"><i
+                <a href="/projects" class="nav-item" title="Gestion Projets"><span class="nav-icon"><i
                             class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
-                <a href="/scanner" class="nav-item"><span class="nav-icon"><i
+                <a href="/scanner" class="nav-item" title="Scanner"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
-                <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
-                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
-                <a href="/analysis" class="nav-item active"><span class="nav-icon"><i
+                <a href="/geospatial-3d" class="nav-item" title="Reconstruction & Jumeau Numérique"><span class="nav-icon"><i
+                            class="ph-duotone ph-globe-hemisphere-west"></i></span><span>Reconstruction & Jumeau</span></a>
+                <a href="/analysis" class="nav-item active" title="Analyse IA"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
-                <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
+                <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
                             class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
-                <a href="/profile" class="nav-item"><span class="nav-icon"><i
+                <a href="/urban-assessment" class="nav-item" title="Impact Urbain"><span class="nav-icon"><i
+                            class="ph-duotone ph-buildings"></i></span><span>Impact Urbain</span></a>
+                <a href="/profile" class="nav-item" title="Mon Profil"><span class="nav-icon"><i
                             class="ph-duotone ph-user"></i></span><span>Mon Profil</span></a>
             </nav>
-            <div class="sidebar-footer">
-                <div
-                    style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
-                    {% if user.avatar_url %}
-                    <img src="{{ user.avatar_url }}"
-                        style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--accent);">
-                    {% else %}
-                    <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
-                    {% endif %}
-                    <div>
-                        <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
-                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>
-                    </div>
-                </div>
-                <a href="/logout"
-                    style="display:flex;align-items:center;gap:0.5rem;color:var(--text-muted);font-size:0.8rem;text-decoration:none;">
-                    <i class="ph-bold ph-sign-out"></i> Déconnexion
-                </a>
-            </div>
         </aside>
 
         <div class="main-wrapper">
+            <header class="main-header">
+                <div class="header-logo-mobile">
+                    <i class="ph-fill ph-bank"></i>
+                    <span>ASL-3D</span>
+                </div>
+                <div class="header-user">
+                    <div class="user-info-pill">
+                        {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="Avatar">
+                        {% else %}
+                        <i class="ph-fill ph-user-circle" style="font-size:1.8rem;color:var(--accent);"></i>
+                        {% endif %}
+                        <span class="user-name">{{ user.name }}</span>
+                    </div>
+                    <a href="/logout" class="logout-btn-header">
+                        <i class="ph-bold ph-sign-out"></i> Déconnexion
+                    </a>
+                </div>
+            </header>
             <main class="page-content">
                 <div class="page-header">
-                    <div class="breadcrumb"><i class="ph-fill ph-magnifying-glass" style="margin-right:4px;"></i>
-                        Analyse IA</div>
-                    <h2>Analyse des Dégradations — YOLOv8</h2>
-                    <p>Détection intelligente des fissures, humidité et dégradations structurelles</p>
+                    <div class="breadcrumb"><i class="ph-fill ph-cpu" style="margin-right:4px;"></i>
+                        Computer Vision & Reconnaissance de Formes</div>
+                    <h2>Reconnaissance des Pathologies — Deep Learning (YOLOv8)</h2>
+                    <p>Détection automatisée des dégradations structurelles par réseaux de neurones convolutifs.</p>
                 </div>
 
                 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -93,21 +91,34 @@
                                 </select>
                             </div>
                             <div class="option-group">
-                                <label for="image_name">Photo à analyser :</label>
-                                <select name="image_name" id="image_name" class="select-input" required>
-                                    <option value="">-- Sélectionner une image --</option>
-                                    {% for img in project_images %}
-                                    <option value="{{ img }}">{{ img }}</option>
-                                    {% endfor %}
-                                </select>
-                                {% if not project_images %}
+                                <label>Mode d'Analyse :</label>
+                                <div class="select-input" style="background:var(--bg-lighter); color:var(--text-primary); display:flex; align-items:center; opacity: 0.8; height: 42px; padding: 0 1rem;">
+                                    <i class="ph-bold ph-images" style="margin-right:8px; color:var(--accent);"></i> Analyse Globale (Toutes les photos)
+                                </div>
                                 <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem;">
                                     <i class="ph-bold ph-info" style="margin-right:4px;"></i>
-                                    Sélectionnez d'abord un projet pour charger ses photos.
+                                    L'IA analysera automatiquement toutes les photos du projet.
                                 </p>
-                                {% endif %}
                             </div>
                         </div>
+
+                        <!-- INFRASTRUCTURE PROJECT (NEW) -->
+                        <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(99, 102, 241, 0.05); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 12px; margin-bottom: 1.2rem;">
+                            <h3 style="font-size: 0.95rem; color: var(--accent); margin-top: 0; margin-bottom: 0.8rem;">
+                                <i class="ph-duotone ph-factory" style="margin-right:8px;"></i> Projets d'Infrastructure à Proximité (Optionnel)
+                            </h3>
+                            <div style="display:grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+                                <div class="option-group">
+                                    <label for="infra_project_name" style="font-size: 0.8rem;">Nom du Projet :</label>
+                                    <input type="text" name="infra_project_name" id="infra_project_name" class="select-input" placeholder="ex: Tramway Ligne T2, Nouvelle Route..." style="width: 100%; height: 42px;">
+                                </div>
+                                <div class="option-group">
+                                    <label for="infra_project_desc" style="font-size: 0.8rem;">Description / Travaux prévus :</label>
+                                    <input type="text" name="infra_project_desc" id="infra_project_desc" class="select-input" placeholder="ex: Vibrations, creusement de fondations à 20m..." style="width: 100%; height: 42px;">
+                                </div>
+                            </div>
+                        </div>
+
                         <button type="submit" class="btn btn-primary" {% if active_task and
                             active_task.status=='running' %}disabled{% endif %}>
                             <i class="ph-bold ph-magnifying-glass" style="margin-right:8px;"></i>
@@ -120,15 +131,43 @@
                     </form>
                 </section>
 
-                <!-- WAITING INDICATOR (meta-refresh active) -->
+                <!-- WAITING INDICATOR (Dynamic Progress Bar) -->
                 {% if active_task and active_task.status == 'running' %}
-                <div
-                    style="margin-top:2rem;padding:1.5rem;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:14px;text-align:center;">
-                    <i class="ph-duotone ph-hourglass-medium" style="font-size:2.5rem;color:var(--accent);"></i>
-                    <p style="margin-top:0.8rem;font-weight:600;">Analyse IA en cours...</p>
-                    <p style="font-size:0.85rem;color:var(--text-muted);">Détection YOLOv8 par apprentissage profond.
-                        Cette page se rafraîchit automatiquement toutes les 5 secondes.</p>
+                <div id="analysis-progress-container"
+                    style="margin-top:2rem;padding:2rem;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:14px;text-align:center;box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                    <i class="ph-duotone ph-cpu" style="font-size:3rem;color:var(--accent);"></i>
+                    <p style="margin-top:0.8rem;font-weight:600;font-size:1.2rem;">Analyse IA globale en cours...</p>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem;">Traitement de toutes les images du projet avec YOLOv8.</p>
+                    
+                    <div style="width: 100%; max-width: 500px; margin: 0 auto; background: rgba(255,255,255,0.05); border-radius: 12px; overflow: hidden; height: 16px; border: 1px solid var(--glass-border);">
+                        <div id="progress-bar-fill" style="width: {{ active_task.progress or 0 }}%; height: 100%; background: linear-gradient(90deg, #6c63ff, #06d6a0); transition: width 0.5s ease-out;"></div>
+                    </div>
+                    <p id="progress-text" style="font-weight: 800; font-size: 1.5rem; margin-top: 0.8rem; color: var(--accent);">{{ active_task.progress or 0 }}%</p>
                 </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const taskId = {{ active_task.id }};
+                        const projectId = {{ selected_project_id }};
+                        const barFill = document.getElementById('progress-bar-fill');
+                        const progressText = document.getElementById('progress-text');
+                        
+                        const interval = setInterval(() => {
+                            fetch(`/api/task_status/${taskId}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    barFill.style.width = data.progress + '%';
+                                    progressText.textContent = data.progress + '%';
+                                    
+                                    if (data.status === 'completed' || data.status === 'failed') {
+                                        clearInterval(interval);
+                                        window.location.href = `/analysis?project_id=${projectId}`;
+                                    }
+                                })
+                                .catch(err => console.error("Erreur de suivi de progression:", err));
+                        }, 1000); // Check every 1 second
+                    });
+                </script>
                 {% endif %}
 
                 <!-- ERROR INDICATOR -->
@@ -169,7 +208,7 @@
                                     <p style="font-weight:600;margin:0.2rem 0;">{{ result.model_used }}</p>
                                 </div>
                                 <div style="padding:1rem;background:var(--bg-card);border-radius:10px;">
-                                    <p style="font-size:0.75rem;color:var(--text-muted);">Statut MySQL</p>
+                                    <p style="font-size:0.75rem;color:var(--text-muted);">Statut PostgreSQL</p>
                                     <p style="font-weight:600;margin:0.2rem 0;color:{{ sc }};">{{ result.status_update
                                         }}</p>
                                 </div>
@@ -198,9 +237,9 @@
                     <!-- IMAGES -->
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1.5rem;">
                         <div>
-                            <h3><i class="ph-duotone ph-image" style="margin-right:6px;"></i> Photo Originale</h3>
+                            <h3><i class="ph-duotone ph-image" style="margin-right:6px;"></i> Photo Représentative</h3>
                             {% set proj_folder = result.project.upload_folder %}
-                            <img src="/static/uploads/{{ proj_folder }}/{{ result.source_image }}" alt="Originale"
+                            <img src="/static/uploads/{{ proj_folder }}/{{ result.source_image }}" alt="Représentative"
                                 style="width:100%;max-height:300px;object-fit:contain;border-radius:10px;background:#0d1117;margin-top:0.5rem;">
                         </div>
                         <div>
@@ -245,7 +284,7 @@
 
                     <!-- INTERACTIVE 3D CONTEXT -->
                     <div style="margin-top:2rem;">
-                        <h3><i class="ph-duotone ph-cube" style="margin-right:8px;"></i> Visualisation 3D Interactive
+                        <h3><i class="ph-duotone ph-globe-hemisphere-west" style="margin-right:8px;"></i> Visualisation 3D Interactive
                         </h3>
                         <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Cliquez sur une carte
                             de dégradation ci-dessus pour centrer le modèle 3D sur la zone affectée.</p>
@@ -350,7 +389,6 @@
             <footer class="footer">
                 <div class="footer-content">
                     <p>&copy; 2026 ASL-3D</p>
-                    <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
                 </div>
             </footer>
         </div>

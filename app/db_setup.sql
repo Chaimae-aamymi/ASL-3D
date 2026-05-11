@@ -1,7 +1,7 @@
 -- ===========================================================
--- ASL-3D Database Setup — MySQL (XAMPP)
+-- ASL-3D Database Setup — PostgreSQL (Migrated from MySQL)
 -- Fichier  : db_setup.sql
--- Exécuter : source db_setup.sql   (depuis phpMyAdmin ou CLI)
+-- Note     : Ce fichier contient la structure initiale.
 -- ===========================================================
 
 -- 1. Créer et sélectionner la base de données
@@ -124,6 +124,6 @@ GROUP BY p.id, p.name, p.monument, p.status, p.created_at, u.name;
 
 -- ===========================================================
 -- Fin du script
--- Connexion depuis Python : PyMySQL + SQLAlchemy
--- URI : mysql+pymysql://root:@localhost/asl3d_db
+-- Connexion depuis Python : psycopg2 + SQLAlchemy
+-- URI : postgresql://postgres:admin@localhost/asl3d_db
 -- ===========================================================

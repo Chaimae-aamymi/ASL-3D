@@ -1,0 +1,145 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jumeau Numérique Mondial — ASL-3D</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- CesiumJS -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.108/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.108/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        #cesiumContainer {
+            width: 100%;
+            height: calc(100vh - 200px);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            background: #000;
+        }
+        .cesium-viewer-bottom { display: none !important; } /* Clean UI */
+    </style>
+</head>
+<body>
+<div class="app-wrapper">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
+            <h1>ASL-3D</h1>
+            <p class="tagline">Jumeau Numérique Mondial</p>
+        </div>
+        <nav class="sidebar-nav">
+            <span class="nav-label">Navigation</span>
+            <a href="/" class="nav-item" title="Tableau de bord"><span class="nav-icon"><i
+                        class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
+            <a href="/projects" class="nav-item" title="Gestion Projets"><span class="nav-icon"><i
+                        class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
+            <a href="/scanner" class="nav-item" title="Scanner"><span class="nav-icon"><i
+                        class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
+            <a href="/geospatial-3d" class="nav-item active" title="Reconstruction & Jumeau Numérique"><span class="nav-icon"><i
+                        class="ph-duotone ph-globe-hemisphere-west"></i></span><span>Reconstruction & Jumeau</span></a>
+            <a href="/analysis" class="nav-item" title="Analyse IA"><span class="nav-icon"><i
+                        class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
+            <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
+                        class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
+            <a href="/urban-assessment" class="nav-item" title="Impact Urbain"><span class="nav-icon"><i
+                        class="ph-duotone ph-buildings"></i></span><span>Impact Urbain</span></a>
+            <a href="/profile" class="nav-item" title="Mon Profil"><span class="nav-icon"><i
+                        class="ph-duotone ph-user"></i></span><span>Mon Profil</span></a>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="main-header">
+            <div class="header-logo-mobile"><i class="ph-fill ph-bank"></i><span>ASL-3D</span></div>
+            <div class="header-user">
+                <div class="user-info-pill">
+                    <i class="ph-fill ph-user-circle" style="font-size:1.8rem;color:var(--accent);"></i>
+                    <span class="user-name">{{ user.name }}</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="page-content">
+            <div class="page-header">
+                <div class="breadcrumb">Jumeau Numérique / Exploration</div>
+                <h2>Exploration Géospatiale 3D (Google 3D Tiles)</h2>
+                <p>Visualisation des monuments dans leur contexte urbain réel.</p>
+            </div>
+
+            <!-- CESIUM CONTAINER -->
+            <div id="cesiumContainer"></div>
+
+            <div style="margin-top: 1.5rem; display: flex; gap: 1rem; align-items: center;">
+                <div class="option-group" style="flex: 1;">
+                    <label>Sélectionner un monument existant :</label>
+                    <select id="projectSelect" class="select-input" onchange="flyToProject(this.value)">
+                        <option value="">-- Choisir un monument --</option>
+                        {% for p in projects %}
+                        <option value="{{ p.latitude }},{{ p.longitude }}">{{ p.monument }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="resetView()" style="margin-top: 1.2rem;">
+                    <i class="ph-bold ph-arrows-out"></i> Vue Globale
+                </button>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    // Initialisation de Cesium avec Google Photorealistic 3D Tiles
+    // Note: Pour une utilisation pro, remplacez par votre clé Cesium Ion
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+        terrainProvider: Cesium.createWorldTerrain(),
+        animation: false,
+        timeline: false,
+        navigationHelpButton: false,
+        sceneModePicker: false,
+        baseLayerPicker: false,
+        geocoder: true
+    });
+
+    // Ajout des tuiles 3D Photoréalistes de Google
+    async function addGoogleTiles() {
+        try {
+            // Utiliser la clé API fournie par le serveur
+            const tileset = await Cesium.createGooglePhotorealistic3DTileset("{{ google_maps_api_key }}");
+            viewer.scene.primitives.add(tileset);
+        } catch (error) {
+            console.log(`Erreur de chargement des tuiles Google 3D: ${error}`);
+        }
+    }
+    addGoogleTiles();
+
+    function flyToProject(coords) {
+        if (!coords) return;
+        const [lat, lon] = coords.split(',').map(Number);
+        viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(lon, lat, 500),
+            orientation: {
+                pitch: Cesium.Math.toRadians(-35.0),
+                heading: 0.0,
+                roll: 0.0
+            }
+        });
+    }
+
+    function resetView() {
+        viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(0, 20, 20000000)
+        });
+    }
+
+    // Si un projet est déjà sélectionné
+    {% if selected_project %}
+    flyToProject("{{ selected_project.latitude }},{{ selected_project.longitude }}");
+    {% endif %}
+</script>
+</body>
+</html>

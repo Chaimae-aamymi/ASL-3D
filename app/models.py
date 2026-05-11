@@ -1,6 +1,6 @@
 """
-models.py — SQLAlchemy models for ASL-3D (MySQL via XAMPP)
-Connection URI: mysql+pymysql://root:@localhost/asl3d_db
+models.py — SQLAlchemy models for ASL-3D (PostgreSQL)
+Connection URI: postgresql://postgres:admin@localhost/asl3d_db
 """
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
@@ -47,6 +47,8 @@ class Project(db.Model):
     monument      = db.Column(db.String(200), nullable=False)
     description   = db.Column(db.Text, nullable=True)
     location      = db.Column(db.String(255), nullable=True)
+    latitude      = db.Column(db.Float, nullable=True)
+    longitude     = db.Column(db.Float, nullable=True)
     upload_folder = db.Column(db.String(255), nullable=False)
     status        = db.Column(
         db.Enum('nouveau', 'en_cours', 'termine', 'danger', 'archive', name='project_statuses'),
@@ -59,6 +61,7 @@ class Project(db.Model):
     reconstructions = db.relationship('Reconstruction', backref='project', lazy=True, cascade='all, delete-orphan')
     reports         = db.relationship('Report',         backref='project', lazy=True, cascade='all, delete-orphan')
     tasks           = db.relationship('TaskStatus',     backref='project', lazy=True, cascade='all, delete-orphan')
+    urban_projects  = db.relationship('UrbanProject',   backref='project', lazy=True, cascade='all, delete-orphan')
 
     @property
     def latest_analysis(self):
@@ -81,6 +84,8 @@ class Analysis(db.Model):
     recommendations  = db.Column(db.Text, nullable=True)
     status_update    = db.Column(db.Enum('Sain', 'Attention', 'Danger', name='status_updates'), default='Sain')
     model_used       = db.Column(db.String(100), default='YOLOv8')
+    infra_project_name = db.Column(db.String(255), nullable=True)
+    infra_project_desc = db.Column(db.Text, nullable=True)
     created_at       = db.Column(db.DateTime, default=datetime.utcnow)
 
     reports = db.relationship('Report', backref='analysis', lazy=True, cascade='all, delete-orphan')
@@ -125,9 +130,27 @@ class TaskStatus(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
     task_type  = db.Column(db.Enum('sfm', 'yolo', name='task_types'), nullable=False)
     status     = db.Column(db.Enum('pending', 'running', 'completed', 'failed', name='task_statuses'), default='pending')
+    progress   = db.Column(db.Integer, default=0) # Pourcentage d'avancement (0-100)
     message    = db.Column(db.String(255), nullable=True) # Optional error message
     started_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
         return f'<TaskStatus {self.task_type} project={self.project_id} status={self.status}>'
+
+
+class UrbanProject(db.Model):
+    __tablename__ = 'urban_projects'
+
+    id                   = db.Column(db.Integer, primary_key=True)
+    project_id           = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    type                 = db.Column(db.String(50), nullable=False)  # tramway, route, tunnel, chantier
+    distance_m           = db.Column(db.Float, nullable=False)
+    vibration_intensity  = db.Column(db.String(20), nullable=False)  # low, medium, high
+    v_impact             = db.Column(db.Float, nullable=True)
+    risk_label           = db.Column(db.String(50), nullable=True)
+    recommendations      = db.Column(db.Text, nullable=True)
+    created_at           = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<UrbanProject {self.type} d={self.distance_m}m project={self.project_id}>'

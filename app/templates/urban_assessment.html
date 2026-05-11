@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Évaluation d'Impact Urbain — ASL-3D</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* ── Buffer Visualization ── */
+        .buffer-zone {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin: 1.5rem auto;
+        }
+        .buffer-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.35;
+            animation: pulse-ring 3s ease-in-out infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 0.25; transform: translate(-50%, -50%) scale(1); }
+            50%       { opacity: 0.5;  transform: translate(-50%, -50%) scale(1.03); }
+        }
+        .ring-1  { width: 50px;  height: 50px;  border-color: #ff6b6b; background: rgba(255,107,107,0.25); }
+        .ring-2  { width: 100px; height: 100px; border-color: #ffd166; animation-delay: 0.3s; }
+        .ring-3  { width: 160px; height: 160px; border-color: #06d6a0; animation-delay: 0.6s; }
+        .ring-4  { width: 220px; height: 220px; border-color: rgba(99,102,241,0.5); animation-delay: 0.9s; }
+        .ring-5  { width: 290px; height: 290px; border-color: rgba(99,102,241,0.2); animation-delay: 1.2s; }
+        .monument-pin {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 36px; height: 36px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; z-index: 2;
+            box-shadow: 0 0 0 6px rgba(99,102,241,0.3), 0 0 20px rgba(99,102,241,0.4);
+        }
+        .project-pin {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            transition: all 0.5s;
+            z-index: 3;
+        }
+        .project-pin-dot {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; cursor: pointer;
+        }
+        .buffer-legend {
+            display: flex; gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 0.8rem;
+            font-size: 0.78rem;
+        }
+        .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+        .legend-dot  { width: 10px; height: 10px; border-radius: 50%; }
+
+        /* ── Formula Display ── */
+        .formula-box {
+            background: rgba(99,102,241,0.06);
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            margin: 1rem 0;
+        }
+        .formula-main { font-size: 1.3rem; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; }
+        .formula-values { font-size: 0.88rem; color: var(--text-muted); }
+
+        /* ── Risk Badge ── */
+        .risk-badge-xl {
+            display: inline-block;
+            padding: 0.6rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .risk-critique { background: rgba(220,38,38,0.15); color: #ff4444; border: 1px solid #ff4444; }
+        .risk-eleve    { background: rgba(234,88,12,0.15); color: #f97316; border: 1px solid #f97316; }
+        .risk-modere   { background: rgba(217,119,6,0.15); color: #fbbf24; border: 1px solid #fbbf24; }
+        .risk-faible   { background: rgba(22,163,74,0.15); color: #06d6a0; border: 1px solid #06d6a0; }
+
+        /* ── Input Range ── */
+        .distance-slider { width: 100%; accent-color: var(--accent); }
+        .range-labels { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+<div class="app-wrapper">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
+            <h1>ASL-3D</h1>
+            <p class="tagline">Restauration Numérique Intelligente</p>
+        </div>
+        <nav class="sidebar-nav">
+            <span class="nav-label">Navigation</span>
+            <a href="/" class="nav-item" title="Tableau de bord"><span class="nav-icon"><i
+                        class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
+            <a href="/projects" class="nav-item" title="Gestion Projets"><span class="nav-icon"><i
+                        class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
+            <a href="/scanner" class="nav-item" title="Scanner"><span class="nav-icon"><i
+                        class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
+            <a href="/geospatial-3d" class="nav-item" title="Reconstruction & Jumeau Numérique"><span class="nav-icon"><i
+                        class="ph-duotone ph-globe-hemisphere-west"></i></span><span>Reconstruction & Jumeau</span></a>
+            <a href="/analysis" class="nav-item" title="Analyse IA"><span class="nav-icon"><i
+                        class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
+            <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
+                        class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
+            <a href="/urban-assessment" class="nav-item active"><span class="nav-icon"><i class="ph-duotone ph-buildings"></i></span><span>Impact Urbain</span></a>
+            <a href="/profile" class="nav-item"><span class="nav-icon"><i class="ph-duotone ph-user"></i></span><span>Mon Profil</span></a>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="main-header">
+            <div class="header-logo-mobile"><i class="ph-fill ph-bank"></i><span>ASL-3D</span></div>
+            <div class="header-user">
+                <div class="user-info-pill">
+                    {% if user.avatar_url %}
+                    <img src="{{ user.avatar_url }}" alt="Avatar">
+                    {% else %}
+                    <i class="ph-fill ph-user-circle" style="font-size:1.8rem;color:var(--accent);"></i>
+                    {% endif %}
+                    <span class="user-name">{{ user.name }}</span>
+                </div>
+                <a href="/logout" class="logout-btn-header"><i class="ph-bold ph-sign-out"></i> Déconnexion</a>
+            </div>
+        </header>
+
+        <main class="page-content">
+            <div class="page-header">
+                <div class="breadcrumb"><i class="ph-fill ph-buildings" style="margin-right:4px;"></i>Impact Urbain</div>
+                <h2>Évaluation d'Impact Urbain — Vibrations & Infrastructure</h2>
+                <p>Modèle d'atténuation exponentielle : <strong>V<sub>impact</sub> = V<sub>source</sub> × e<sup>-k·d</sup></strong></p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">
+                <i class="ph-bold {% if category == 'success' %}ph-check-circle{% else %}ph-warning-circle{% endif %}" style="margin-right:8px;"></i>{{ message }}
+            </div>
+            {% endfor %}{% endif %}
+            {% endwith %}
+
+            <!-- ═══ FORM ═══ -->
+            <section class="analysis-section">
+                <h2><i class="ph-duotone ph-factory" style="margin-right:8px;"></i> Nouveau Projet d'Infrastructure</h2>
+                <form method="POST" action="/urban-assessment" id="urbanForm">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;margin-bottom:1.2rem;">
+                        <div class="option-group">
+                            <label for="project_id">Monument / Projet :</label>
+                            <select name="project_id" id="project_id" class="select-input" required onchange="this.form.action='/urban-assessment?project_id='+this.value">
+                                <option value="">-- Sélectionner un projet --</option>
+                                {% for p in projects %}
+                                <option value="{{ p.id }}" {% if selected_project_id==p.id %}selected{% endif %}>{{ p.monument }} — {{ p.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="option-group">
+                            <label for="type">Type de Projet d'Infrastructure :</label>
+                            <select name="type" id="type" class="select-input" required onchange="updateBufferIcon(this.value)">
+                                <option value="tramway">🚊 Tramway / Métro</option>
+                                <option value="route">🛣️ Route / Autoroute</option>
+                                <option value="tunnel">⛏️ Tunnel / Excavation</option>
+                                <option value="chantier">🏗️ Chantier / Bâtiment</option>
+                            </select>
+                        </div>
+                        <div class="option-group">
+                            <label for="vibration_intensity">Intensité des Vibrations :</label>
+                            <select name="vibration_intensity" id="vibration_intensity" class="select-input" required>
+                                <option value="low">🟢 Faible (V<sub>s</sub> = 5 mm/s)</option>
+                                <option value="medium" selected>🟡 Moyenne (V<sub>s</sub> = 15 mm/s)</option>
+                                <option value="high">🔴 Élevée (V<sub>s</sub> = 30 mm/s)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Distance slider -->
+                    <div class="option-group" style="margin-bottom:1.5rem;">
+                        <label for="distance_m">Distance du Monument : <strong id="dist_label" style="color:var(--accent);">100 m</strong></label>
+                        <input type="range" name="distance_m" id="distance_m" class="distance-slider" min="1" max="500" value="100" oninput="document.getElementById('dist_label').textContent=this.value+' m'; updateBufferPin(this.value);">
+                        <div class="range-labels">
+                            <span>0m</span>
+                            <span>125m</span>
+                            <span>250m</span>
+                            <span>375m</span>
+                            <span>500m</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ph-bold ph-wave-sine" style="margin-right:8px;"></i> Calculer l'Impact Vibratoire
+                    </button>
+                </form>
+            </section>
+
+            <!-- ═══ RESULTS ═══ -->
+            {% if result %}
+            <section style="margin-top:2rem;">
+                <h2><i class="ph-duotone ph-chart-bar" style="margin-right:8px;"></i> Résultats de l'Analyse Vibratoire</h2>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1.5rem;align-items:start;">
+                    <!-- Left: Values -->
+                    <div>
+                        <div style="text-align:center;margin-bottom:1.5rem;">
+                            {% set risk = result.risk_label %}
+                            <div class="risk-badge-xl risk-{{ risk|lower }}">{{ risk }}</div>
+                            {% if result.severity_boost %}
+                            <div style="margin-top:0.5rem;padding:0.4rem 0.8rem;background:rgba(220,38,38,0.1);border-radius:8px;font-size:0.82rem;color:#ff4444;">
+                                <i class="ph-bold ph-warning"></i> Fissures détectées + Distance &lt; 50m — Sévérité boostée à CRITIQUE
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Physics Formula -->
+                        <div class="formula-box">
+                            <div class="formula-main">V<sub>impact</sub> = {{ result.v_source }} × e<sup>-{{ result.k }} × {{ result.distance_m|int }}</sup></div>
+                            <div class="formula-main" style="color:#06d6a0;">= <strong>{{ result.v_impact }} mm/s</strong></div>
+                            <div class="formula-values">k = {{ result.k }} ({{ result.type_label }}) &nbsp;|&nbsp; V<sub>source</sub> = {{ result.v_source }} mm/s</div>
+                        </div>
+
+                        <!-- Metric Cards -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-top:1rem;">
+                            <div style="padding:1rem;background:var(--bg-card);border-radius:10px;text-align:center;">
+                                <p style="font-size:0.72rem;color:var(--text-muted);">V<sub>impact</sub> calculé</p>
+                                <p style="font-size:1.6rem;font-weight:800;color:var(--accent);">{{ result.v_impact }}</p>
+                                <p style="font-size:0.72rem;color:var(--text-muted);">mm/s</p>
+                            </div>
+                            <div style="padding:1rem;background:var(--bg-card);border-radius:10px;text-align:center;">
+                                <p style="font-size:0.72rem;color:var(--text-muted);">Distance</p>
+                                <p style="font-size:1.6rem;font-weight:800;color:var(--accent);">{{ result.distance_m|int }}</p>
+                                <p style="font-size:0.72rem;color:var(--text-muted);">mètres</p>
+                            </div>
+                        </div>
+
+                        <!-- Recommendations & Engineering Solutions -->
+                        <div style="margin-top:1.2rem;">
+                            <h4 style="color:var(--accent);"><i class="ph-duotone ph-shield-check" style="margin-right:6px;"></i> Solutions d'Ingénierie Recommandées</h4>
+                            
+                            <!-- BEFORE / AFTER COMPARISON -->
+                            <div style="display:flex;gap:1rem;margin-bottom:1.5rem;background:rgba(99,102,241,0.05);padding:1rem;border-radius:12px;border:1px dashed var(--accent);">
+                                <div style="flex:1;text-align:center;">
+                                    <p style="font-size:0.7rem;color:var(--text-muted);">Impact Initial</p>
+                                    <p style="color:#ff4444;font-weight:700;">{{ result.v_impact }} mm/s</p>
+                                </div>
+                                <div style="display:flex;align-items:center;color:var(--accent);"><i class="ph-bold ph-arrow-right"></i></div>
+                                <div style="flex:1;text-align:center;">
+                                    <p style="font-size:0.7rem;color:var(--text-muted);">Impact avec Solution</p>
+                                    <p style="color:#06d6a0;font-weight:700;">{{ result.v_mitigated }} mm/s</p>
+                                    <span style="font-size:0.65rem;padding:2px 6px;background:#06d6a0;color:white;border-radius:4px;">{{ result.mitigated_label }}</span>
+                                </div>
+                            </div>
+
+                            {% for sol in result.solutions %}
+                            <div style="margin-bottom:0.8rem;padding:1rem;background:var(--bg-card);border-radius:10px;border-left:4px solid var(--accent);box-shadow:var(--shadow-sm);">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem;">
+                                    <strong style="color:var(--text);font-size:0.95rem;">{{ sol.name }}</strong>
+                                    <span style="color:#06d6a0;font-size:0.75rem;font-weight:700;">-{{ (sol.reduction * 100)|int }}% Vibration</span>
+                                </div>
+                                <p style="font-size:0.82rem;color:var(--text-muted);">{{ sol.desc }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Right: Buffer Visualization -->
+                    <div>
+                        <h4 style="text-align:center;color:var(--text-muted);margin-bottom:0.5rem;">Zone d'Influence (Buffer)</h4>
+                        <div class="buffer-zone" id="bufferZone">
+                            <div class="buffer-ring ring-5"></div>
+                            <div class="buffer-ring ring-4"></div>
+                            <div class="buffer-ring ring-3"></div>
+                            <div class="buffer-ring ring-2"></div>
+                            <div class="buffer-ring ring-1"></div>
+                            <div class="monument-pin" title="Monument">🏛️</div>
+                            <div class="project-pin" id="projectPin" style="top:50%;left:75%;">
+                                <div class="project-pin-dot" style="background:rgba(255,107,107,0.2);border:2px solid #ff6b6b;" title="Projet Infrastructure">🚊</div>
+                            </div>
+                        </div>
+                        <div class="buffer-legend">
+                            <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b;"></div><span>&lt;20m CRITIQUE</span></div>
+                            <div class="legend-item"><div class="legend-dot" style="background:#ffd166;"></div><span>20–50m ÉLEVÉ</span></div>
+                            <div class="legend-item"><div class="legend-dot" style="background:#06d6a0;"></div><span>50–150m MODÉRÉ</span></div>
+                            <div class="legend-item"><div class="legend-dot" style="background:rgba(99,102,241,0.5);"></div><span>&gt;150m FAIBLE</span></div>
+                        </div>
+                        <p style="text-align:center;font-size:0.78rem;color:var(--text-muted);margin-top:0.8rem;">
+                            📐 Distance calculée : <strong>{{ result.distance_m|int }} m</strong> du monument
+                        </p>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
+            <!-- ═══ HISTORY ═══ -->
+            {% if assessments %}
+            <section style="margin-top:2.5rem;">
+                <h2><i class="ph-duotone ph-clock-countdown" style="margin-right:8px;"></i> Historique des Évaluations</h2>
+                <div style="overflow-x:auto;margin-top:1rem;">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.87rem;">
+                        <thead>
+                            <tr style="background:var(--bg-card);">
+                                <th style="padding:0.8rem;text-align:left;color:var(--text-muted);">Type</th>
+                                <th style="padding:0.8rem;text-align:center;color:var(--text-muted);">Distance</th>
+                                <th style="padding:0.8rem;text-align:center;color:var(--text-muted);">Intensité</th>
+                                <th style="padding:0.8rem;text-align:center;color:var(--text-muted);">V<sub>impact</sub></th>
+                                <th style="padding:0.8rem;text-align:center;color:var(--text-muted);">Risque</th>
+                                <th style="padding:0.8rem;text-align:center;color:var(--text-muted);">PDF</th>
+                                <th style="padding:0.8rem;text-align:center;color:var(--text-muted);">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in assessments %}
+                            {% set rc = 'risk-critique' if a.risk_label=='CRITIQUE' else ('risk-eleve' if a.risk_label=='ELEVE' else ('risk-modere' if a.risk_label=='MODERE' else 'risk-faible')) %}
+                            <tr style="border-bottom:1px solid var(--border);">
+                                <td style="padding:0.7rem 0.8rem;font-weight:600;">{{ a.type.capitalize() }}</td>
+                                <td style="padding:0.7rem 0.8rem;text-align:center;">{{ a.distance_m|int }} m</td>
+                                <td style="padding:0.7rem 0.8rem;text-align:center;">{{ a.vibration_intensity }}</td>
+                                <td style="padding:0.7rem 0.8rem;text-align:center;font-weight:700;color:var(--accent);">{{ "%.3f"|format(a.v_impact) }}</td>
+                                <td style="padding:0.7rem 0.8rem;text-align:center;"><span class="risk-badge-xl {{ rc }}" style="font-size:0.72rem;padding:0.2rem 0.6rem;">{{ a.risk_label }}</span></td>
+                                <td style="padding:0.7rem 0.8rem;text-align:center;"><a href="/urban-assessment/pdf/{{ a.id }}" class="btn btn-secondary" style="padding:0.3rem 0.7rem;font-size:0.75rem;"><i class="ph-bold ph-file-pdf"></i> PDF</a></td>
+                                <td style="padding:0.7rem 0.8rem;text-align:center;color:var(--text-muted);font-size:0.78rem;">{{ a.created_at.strftime('%d/%m/%Y') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            {% endif %}
+
+            <!-- ═══ REFERENCE TABLE ═══ -->
+            <section style="margin-top:3rem;">
+                <h3><i class="ph-duotone ph-books" style="margin-right:8px;"></i> Table de Référence — Normes DIN 4150-3</h3>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin-top:1rem;">
+                    <div style="padding:1rem;background:var(--bg-card);border-radius:10px;border-top:3px solid #ff6b6b;">
+                        <h5 style="color:#ff6b6b;margin:0 0 0.4rem;">CRITIQUE &gt;10 mm/s</h5>
+                        <p style="font-size:0.78rem;">Risque immédiat. Arrêt des travaux requis.</p>
+                    </div>
+                    <div style="padding:1rem;background:var(--bg-card);border-radius:10px;border-top:3px solid #f97316;">
+                        <h5 style="color:#f97316;margin:0 0 0.4rem;">ÉLEVÉ 3–10 mm/s</h5>
+                        <p style="font-size:0.78rem;">Surveillance renforcée. Capteurs obligatoires.</p>
+                    </div>
+                    <div style="padding:1rem;background:var(--bg-card);border-radius:10px;border-top:3px solid #fbbf24;">
+                        <h5 style="color:#fbbf24;margin:0 0 0.4rem;">MODÉRÉ 0.5–3 mm/s</h5>
+                        <p style="font-size:0.78rem;">Inspections trimestrielles recommandées.</p>
+                    </div>
+                    <div style="padding:1rem;background:var(--bg-card);border-radius:10px;border-top:3px solid #06d6a0;">
+                        <h5 style="color:#06d6a0;margin:0 0 0.4rem;">FAIBLE &lt;0.5 mm/s</h5>
+                        <p style="font-size:0.78rem;">Risque négligeable. Contrôle annuel.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-content"><p>&copy; 2026 ASL-3D</p></div>
+        </footer>
+    </div>
+</div>
+
+<script>
+const ICONS = { tramway: '🚊', route: '🛣️', tunnel: '⛏️', chantier: '🏗️' };
+
+function updateBufferIcon(type) {
+    const pin = document.querySelector('.project-pin-dot');
+    if (pin) pin.textContent = ICONS[type] || '🏗️';
+}
+
+function updateBufferPin(distance) {
+    const pin = document.getElementById('projectPin');
+    if (!pin) return;
+    // Map distance 1–500m → 55%–95% left position from center
+    const pct = 55 + Math.min((distance / 500) * 40, 40);
+    pin.style.left = pct + '%';
+}
+
+updateBufferPin(100);
+</script>
+</body>
+</html>

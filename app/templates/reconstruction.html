@@ -10,7 +10,7 @@
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     {% if active_task and active_task.status == 'running' %}
     <!-- Auto-refresh every 5s while model is being generated -->
-    <meta http-equiv="refresh" content="5;url=/reconstruction?project_id={{ selected_project_id }}">
+    <meta http-equiv="refresh" content="5;url=/reconstruction?project_id={{ selected_project_id }}&quality={{ request.args.get('quality', 'high') }}">
     {% endif %}
 </head>
 
@@ -23,43 +23,45 @@
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
-                <a href="/" class="nav-item"><span class="nav-icon"><i
+                <a href="/" class="nav-item" title="Tableau de bord"><span class="nav-icon"><i
                             class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
-                <a href="/projects" class="nav-item"><span class="nav-icon"><i
+                <a href="/projects" class="nav-item" title="Gestion Projets"><span class="nav-icon"><i
                             class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
-                <a href="/scanner" class="nav-item"><span class="nav-icon"><i
+                <a href="/scanner" class="nav-item" title="Scanner"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
-                <a href="/reconstruction" class="nav-item active"><span class="nav-icon"><i
+                <a href="/reconstruction" class="nav-item active" title="Reconstruction 3D"><span class="nav-icon"><i
                             class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
-                <a href="/analysis" class="nav-item"><span class="nav-icon"><i
+                <a href="/analysis" class="nav-item" title="Analyse IA"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
-                <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
+                <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
                             class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
-                <a href="/profile" class="nav-item"><span class="nav-icon"><i
+                <a href="/urban-assessment" class="nav-item" title="Impact Urbain"><span class="nav-icon"><i
+                            class="ph-duotone ph-buildings"></i></span><span>Impact Urbain</span></a>
+                <a href="/profile" class="nav-item" title="Mon Profil"><span class="nav-icon"><i
                             class="ph-duotone ph-user"></i></span><span>Mon Profil</span></a>
             </nav>
-            <div class="sidebar-footer">
-                <div
-                    style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
-                    {% if user.avatar_url %}
-                    <img src="{{ user.avatar_url }}"
-                        style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--accent);">
-                    {% else %}
-                    <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
-                    {% endif %}
-                    <div>
-                        <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
-                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>
-                    </div>
-                </div>
-                <a href="/logout"
-                    style="display:flex;align-items:center;gap:0.5rem;color:var(--text-muted);font-size:0.8rem;text-decoration:none;">
-                    <i class="ph-bold ph-sign-out"></i> Déconnexion
-                </a>
-            </div>
         </aside>
 
         <div class="main-wrapper">
+            <header class="main-header">
+                <div class="header-logo-mobile">
+                    <i class="ph-fill ph-bank"></i>
+                    <span>ASL-3D</span>
+                </div>
+                <div class="header-user">
+                    <div class="user-info-pill">
+                        {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="Avatar">
+                        {% else %}
+                        <i class="ph-fill ph-user-circle" style="font-size:1.8rem;color:var(--accent);"></i>
+                        {% endif %}
+                        <span class="user-name">{{ user.name }}</span>
+                    </div>
+                    <a href="/logout" class="logout-btn-header">
+                        <i class="ph-bold ph-sign-out"></i> Déconnexion
+                    </a>
+                </div>
+            </header>
             <main class="page-content">
                 <div class="page-header">
                     <div class="breadcrumb"><i class="ph-fill ph-cube" style="margin-right:4px;"></i> Reconstruction 3D
@@ -95,10 +97,11 @@
                             <div class="option-group">
                                 <label for="quality">Qualité :</label>
                                 <select name="quality" id="quality" class="select-input">
-                                    <option value="low">Basse (rapide)</option>
-                                    <option value="medium">Moyenne</option>
-                                    <option value="high" selected>Haute (recommandée)</option>
-                                    <option value="ultra">Ultra (lent)</option>
+                                    <option value="low" {% if request.args.get('quality')=='low' %}selected{% endif %}>Basse (rapide)</option>
+                                    <option value="medium" {% if request.args.get('quality')=='medium' %}selected{% endif %}>Moyenne</option>
+                                    <option value="high" {% if not request.args.get('quality') or request.args.get('quality')=='high' %}selected{% endif %}>Haute (recommandée)</option>
+                                    <option value="ultra" {% if request.args.get('quality')=='ultra' %}selected{% endif %}>Ultra (lent)</option>
+                                    <option value="cloud" {% if request.args.get('quality')=='cloud' %}selected{% endif %}>☁️ Cloud AI (Sans GPU NVIDIA)</option>
                                 </select>
                             </div>
                         </div>
@@ -176,15 +179,46 @@
                         </div>
                     </div>
 
-                    <!-- 3D VIEWER — only native attributes, ZERO JS -->
+                    <!-- 3D RESULTS — Static Preview (Python) + Interactive Toggle -->
                     {% if result.model_file.endswith('.glb') %}
                     <div style="margin:1.5rem 0;">
-                        <h3><i class="ph-duotone ph-cube" style="margin-right:8px;"></i> Visionneuse 3D Interactive</h3>
-                        <model-viewer src="/outputs/{{ result.model_file }}"
-                            alt="Modèle 3D — {{ result.project.monument if result.project else 'Monument' }}"
-                            auto-rotate camera-controls shadow-intensity="1" exposure="0.8"
-                            style="width:100%;height:450px;border-radius:16px;background:#0d1117;margin-top:1rem;"></model-viewer>
+                        <h3><i class="ph-duotone ph-image" style="margin-right:8px;"></i> Aperçu du Rendu (Généré par Python)</h3>
+                        
+                        <!-- STATIC IMAGE (No JS needed) -->
+                        <div id="static-preview-container" style="width:100%;border-radius:16px;background:#0d1117;overflow:hidden;border:1px solid var(--glass-border);text-align:center;">
+                            <img src="/outputs/{{ result.model_file.replace('.glb', '.png') }}" alt="Rendu 3D" style="max-width:100%;height:auto;display:block;margin:0 auto;">
+                        </div>
+
+                        <!-- INTERACTIVE TOGGLE -->
+                        <div style="margin-top:1rem;text-align:center;">
+                            <button id="toggle-3d-btn" class="btn btn-secondary" style="font-size:0.85rem;padding:0.5rem 1rem;">
+                                <i class="ph-bold ph-cube" style="margin-right:8px;"></i> Activer la vue 3D Interactive (JS)
+                            </button>
+                        </div>
+
+                        <!-- HIDDEN 3D CONTAINER -->
+                        <div id="three-container" style="width:100%;height:500px;border-radius:16px;background:#0d1117;margin-top:1rem;position:relative;overflow:hidden;border:1px solid var(--glass-border);display:none;">
+                            <!-- Three.js will render here only on demand -->
+                        </div>
                     </div>
+
+                    <script type="module">
+                        import '/static/js/three_viewer.js';
+                        
+                        const toggleBtn = document.getElementById('toggle-3d-btn');
+                        const previewCont = document.getElementById('static-preview-container');
+                        const threeCont = document.getElementById('three-container');
+
+                        toggleBtn.addEventListener('click', () => {
+                            // Switch views
+                            previewCont.style.display = 'none';
+                            threeCont.style.display = 'block';
+                            toggleBtn.style.display = 'none';
+                            
+                            // Initialize Three.js
+                            new ASL3DViewer('three-container', '/outputs/{{ result.model_file }}');
+                        });
+                    </script>
                     {% endif %}
 
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem;">
@@ -203,7 +237,7 @@
             <footer class="footer">
                 <div class="footer-content">
                     <p>&copy; 2026 ASL-3D</p>
-                    <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
+                    <p class="creator-credit">Système de Restauration du Patrimoine</p>
                 </div>
             </footer>
         </div>

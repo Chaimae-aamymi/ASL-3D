@@ -1,45 +1,29 @@
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-env/
 venv/
 venv_asl3d/
-*.egg-info/
-dist/
-build/
+.env
 
-# TensorFlow/Keras
-*.h5
-*.pb
-saved_model/
-models/
-
-# YOLOv8
-*.pt
+# Flask/Static
+static/uploads/*
+!static/uploads/default/
+static/analyses/results/*
+static/models/*.glb
+static/reports/*.pdf
+outputs/
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
+*.code-workspace
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-
-# ⚠️ SECURITY — never commit these
-.env
-*.env
-
-# Generated files (large binaries)
-outputs/
-static/uploads/
-
-# Virtual environment
-venv_asl3d/
+# Test files
+test.glb
+test_trimesh.py

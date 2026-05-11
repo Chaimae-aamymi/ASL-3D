@@ -19,43 +19,45 @@
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
-                <a href="/" class="nav-item active"><span class="nav-icon"><i
+                <a href="/" class="nav-item active" title="Tableau de bord"><span class="nav-icon"><i
                             class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
-                <a href="/projects" class="nav-item"><span class="nav-icon"><i
+                <a href="/projects" class="nav-item" title="Gestion Projets"><span class="nav-icon"><i
                             class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
-                <a href="/scanner" class="nav-item"><span class="nav-icon"><i
+                <a href="/scanner" class="nav-item" title="Scanner"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
-                <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
-                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
-                <a href="/analysis" class="nav-item"><span class="nav-icon"><i
+                <a href="/geospatial-3d" class="nav-item" title="Reconstruction & Jumeau Numérique"><span class="nav-icon"><i
+                            class="ph-duotone ph-globe-hemisphere-west"></i></span><span>Reconstruction & Jumeau</span></a>
+                <a href="/analysis" class="nav-item" title="Analyse IA"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
-                <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
+                <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
                             class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
-                <a href="/profile" class="nav-item"><span class="nav-icon"><i
+                <a href="/urban-assessment" class="nav-item" title="Impact Urbain"><span class="nav-icon"><i
+                            class="ph-duotone ph-buildings"></i></span><span>Impact Urbain</span></a>
+                <a href="/profile" class="nav-item" title="Mon Profil"><span class="nav-icon"><i
                             class="ph-duotone ph-user"></i></span><span>Mon Profil</span></a>
             </nav>
-            <div class="sidebar-footer">
-                <div
-                    style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
-                    {% if user.avatar_url %}
-                    <img src="{{ user.avatar_url }}"
-                        style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--accent);">
-                    {% else %}
-                    <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
-                    {% endif %}
-                    <div>
-                        <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
-                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>
-                    </div>
-                </div>
-                <a href="/logout"
-                    style="display:flex;align-items:center;gap:0.5rem;color:var(--text-muted);font-size:0.8rem;text-decoration:none;">
-                    <i class="ph-bold ph-sign-out"></i> Déconnexion
-                </a>
-            </div>
         </aside>
 
         <div class="main-wrapper">
+            <header class="main-header">
+                <div class="header-logo-mobile">
+                    <i class="ph-fill ph-bank"></i>
+                    <span>ASL-3D</span>
+                </div>
+                <div class="header-user">
+                    <div class="user-info-pill">
+                        {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="Avatar">
+                        {% else %}
+                        <i class="ph-fill ph-user-circle" style="font-size:1.8rem;color:var(--accent);"></i>
+                        {% endif %}
+                        <span class="user-name">{{ user.name }}</span>
+                    </div>
+                    <a href="/logout" class="logout-btn-header">
+                        <i class="ph-bold ph-sign-out"></i> Déconnexion
+                    </a>
+                </div>
+            </header>
             <main class="page-content">
                 <div class="page-header">
                     <div class="breadcrumb"><i class="ph-fill ph-squares-four" style="margin-right:4px;"></i> Tableau de
@@ -73,28 +75,28 @@
                 {% endfor %}{% endif %}
                 {% endwith %}
 
-                <!-- STATS CARDS -->
-                <div
-                    style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.2rem;margin-bottom:2.5rem;">
-                    <div
-                        style="padding:1.5rem;background:var(--bg-card);border-radius:14px;border:1px solid var(--glass-border);">
-                        <i class="ph-fill ph-buildings" style="font-size:2rem;color:var(--accent);"></i>
-                        <p style="font-size:2rem;font-weight:800;margin:0.4rem 0;">{{ total_projects }}</p>
-                        <p style="font-size:0.85rem;color:var(--text-secondary);">Total Projets</p>
+                <!-- PROJECT MISSION & OBJECTIVES (MATCHING YOUR DESCRIPTION) -->
+                <div style="margin-bottom: 2.5rem; padding: 1.5rem; background: linear-gradient(135deg, rgba(108, 99, 255, 0.1), rgba(6, 214, 160, 0.1)); border-radius: 16px; border: 1px solid var(--glass-border); display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <h3 style="color: var(--accent); margin-top: 0;"><i class="ph-duotone ph-rocket-launch" style="margin-right:8px;"></i> Mission du Projet</h3>
+                        <p style="font-size: 0.95rem; line-height: 1.6; color: var(--text-secondary);">
+                            <strong>Modélisation 3D intelligente et reconnaissance de formes pour la restauration architecturale.</strong><br>
+                            Cette plateforme utilise l'Intelligence Artificielle (Deep Learning) pour scanner et reconstruire numériquement des bâtiments historiques, détecter automatiquement les dégradations (Computer Vision) et guider le processus de restauration via des plans de réparation générés automatiquement.
+                        </p>
                     </div>
-                    <div
-                        style="padding:1.5rem;background:var(--bg-card);border-radius:14px;border:1px solid var(--glass-border);">
-                        <i class="ph-fill ph-warning-circle" style="font-size:2rem;color:#ff6b6b;"></i>
-                        <p
-                            style="font-size:2rem;font-weight:800;margin:0.4rem 0;color: {{ '#ff6b6b' if danger_count > 0 else 'var(--text-primary)' }};">
-                            {{ danger_count }}</p>
-                        <p style="font-size:0.85rem;color:var(--text-secondary);">Alertes Critiques</p>
-                    </div>
-                    <div
-                        style="padding:1.5rem;background:var(--bg-card);border-radius:14px;border:1px solid var(--glass-border);">
-                        <i class="ph-fill ph-magnifying-glass" style="font-size:2rem;color:var(--accent-2);"></i>
-                        <p style="font-size:2rem;font-weight:800;margin:0.4rem 0;">{{ recent_analyses|length }}</p>
-                        <p style="font-size:0.85rem;color:var(--text-secondary);">Analyses Récentes</p>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div style="background: rgba(255,255,255,0.05); padding: 0.6rem 1.2rem; border-radius: 12px; border: 1px solid var(--border);">
+                            <i class="ph-bold ph-eye" style="color: var(--accent); margin-right: 6px;"></i>
+                            <span style="font-size: 0.85rem; font-weight: 600;">Vision par Ordinateur</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.05); padding: 0.6rem 1.2rem; border-radius: 12px; border: 1px solid var(--border);">
+                            <i class="ph-bold ph-cpu" style="color: var(--accent-2); margin-right: 6px;"></i>
+                            <span style="font-size: 0.85rem; font-weight: 600;">Deep Learning</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.05); padding: 0.6rem 1.2rem; border-radius: 12px; border: 1px solid var(--border);">
+                            <i class="ph-bold ph-cube" style="color: var(--accent-3); margin-right: 6px;"></i>
+                            <span style="font-size: 0.85rem; font-weight: 600;">Modèles 3D</span>
+                        </div>
                     </div>
                 </div>
 
@@ -166,8 +168,8 @@
                                                         style="padding: 0.4rem; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--text-secondary); text-decoration: none;">
                                                         <i class="ph-bold ph-eye"></i>
                                                     </a>
-                                                    <a href="/reconstruction?project_id={{ p.id }}" class="btn-icon"
-                                                        title="Reconstruction 3D"
+                                                    <a href="/geospatial-3d?project_id={{ p.id }}" class="btn-icon"
+                                                        title="Jumeau Numérique"
                                                         style="padding: 0.4rem; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--accent-2); text-decoration: none;">
                                                         <i class="ph-bold ph-cube"></i>
                                                     </a>
@@ -234,7 +236,7 @@
                             <p style="font-size:1.3rem;font-weight:800;color:{{ sc }};">{{ score|int }}<span
                                     style="font-size:0.8rem;color:var(--text-muted);">/100</span></p>
                             <a href="/analysis?project_id={{ a.project_id }}"
-                                style="font-size:0.78rem;color:var(--accent);text-decoration:none;">Voir l'analyse →</a>
+                                style="font-size:0.78rem;color:var(--accent);text-decoration:none;">Voir l'analyse â</a>
                         </div>
                         {% endfor %}
                     </div>
@@ -244,7 +246,6 @@
             <footer class="footer">
                 <div class="footer-content">
                     <p>&copy; 2026 ASL-3D</p>
-                    <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
                 </div>
             </footer>
         </div>

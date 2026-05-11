@@ -18,36 +18,46 @@
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
-                <a href="/" class="nav-item"><span class="nav-icon"><i
+                <a href="/" class="nav-item" title="Tableau de bord"><span class="nav-icon"><i
                             class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
-                <a href="/projects" class="nav-item"><span class="nav-icon"><i
+                <a href="/projects" class="nav-item" title="Gestion Projets"><span class="nav-icon"><i
                             class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
-                <a href="/scanner" class="nav-item"><span class="nav-icon"><i
+                <a href="/scanner" class="nav-item" title="Scanner"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
-                <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
-                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
-                <a href="/analysis" class="nav-item"><span class="nav-icon"><i
+                <a href="/geospatial-3d" class="nav-item" title="Reconstruction & Jumeau Numérique"><span class="nav-icon"><i
+                            class="ph-duotone ph-globe-hemisphere-west"></i></span><span>Reconstruction & Jumeau</span></a>
+                <a href="/analysis" class="nav-item" title="Analyse IA"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
-                <a href="/restoration-guide" class="nav-item active"><span class="nav-icon"><i
-                            class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
+                <a href="/restoration-guide" class="nav-item active" title="Guide Restauration"><span
+                        class="nav-icon"><i class="ph-duotone ph-clipboard-text"></i></span><span>Guide
+                        Restauration</span></a>
+                <a href="/urban-assessment" class="nav-item" title="Impact Urbain"><span class="nav-icon"><i
+                            class="ph-duotone ph-buildings"></i></span><span>Impact Urbain</span></a>
+                <a href="/profile" class="nav-item" title="Mon Profil"><span class="nav-icon"><i
+                            class="ph-duotone ph-user"></i></span><span>Mon Profil</span></a>
             </nav>
-            <div class="sidebar-footer">
-                <div
-                    style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
-                    <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
-                    <div>
-                        <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
-                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>
-                    </div>
-                </div>
-                <a href="/logout"
-                    style="display:flex;align-items:center;gap:0.5rem;color:var(--text-muted);font-size:0.8rem;text-decoration:none;">
-                    <i class="ph-bold ph-sign-out"></i> Déconnexion
-                </a>
-            </div>
         </aside>
 
         <div class="main-wrapper">
+            <header class="main-header">
+                <div class="header-logo-mobile">
+                    <i class="ph-fill ph-bank"></i>
+                    <span>ASL-3D</span>
+                </div>
+                <div class="header-user">
+                    <div class="user-info-pill">
+                        {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="Avatar">
+                        {% else %}
+                        <i class="ph-fill ph-user-circle" style="font-size:1.8rem;color:var(--accent);"></i>
+                        {% endif %}
+                        <span class="user-name">{{ user.name }}</span>
+                    </div>
+                    <a href="/logout" class="logout-btn-header">
+                        <i class="ph-bold ph-sign-out"></i> Déconnexion
+                    </a>
+                </div>
+            </header>
             <main class="page-content">
                 <div class="page-header">
                     <div class="breadcrumb"><i class="ph-fill ph-clipboard-text" style="margin-right:4px;"></i> Guide de
@@ -233,7 +243,6 @@
             <footer class="footer">
                 <div class="footer-content">
                     <p>&copy; 2026 ASL-3D</p>
-                    <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
                 </div>
             </footer>
         </div>

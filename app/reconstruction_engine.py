@@ -233,6 +233,117 @@ class ReconstructionEngine:
         
         return plan
     
+    def analyze_project_impact(self, degradations, project_name, project_desc):
+        """Analyser l'impact d'un projet d'infrastructure externe sur le monument"""
+        if not project_name:
+            return None
+            
+        impact = {
+            'project': project_name,
+            'description': project_desc,
+            'risk_level': 'MODÉRÉ',
+            'risk_color': (217, 119, 6), # Amber
+            'main_concerns': [],
+            'engineering_advice': []
+        }
+        
+        desc_lower = (project_desc or "").lower()
+        name_lower = project_name.lower()
+        combined = desc_lower + " " + name_lower
+        
+        # 1. Vibration Risk (Tram, Train, Heavy Machinery)
+        if any(kw in combined for kw in ['tram', 'métro', 'metro', 'vibration', 'train', 'rail', 'poids lourds']):
+            impact['main_concerns'].append("Risque vibratoire élevé pouvant aggraver les désordres structurels.")
+            impact['engineering_advice'].append("Installation de capteurs sismiques de précision.")
+            impact['engineering_advice'].append("Mise en place de plots antivibratoires sous les rails/chaussée.")
+            # Aggravation factors
+            if any(d['type'] == 'fissures' for d in degradations):
+                impact['risk_level'] = 'ÉLEVÉ'
+                impact['risk_color'] = (220, 38, 38) # Red
+                impact['main_concerns'].append("ALERTE : Les fissures existantes sont vulnérables aux ondes de choc.")
+
+        # 2. Foundation/Ground Risk (Excavation, Building, Piling)
+        if any(kw in combined for kw in ['fondation', 'excavation', 'creusement', 'immeuble', 'tunnel', 'pieux', 'piling']):
+            impact['main_concerns'].append("Instabilité potentielle des sols et tassements différentiels.")
+            impact['engineering_advice'].append("Étude géotechnique G2/G3 approfondie avant travaux.")
+            impact['engineering_advice'].append("Étaiement préventif des structures porteuses du monument.")
+
+        # 3. Environmental/Chemical Risk (Road, Industry, Bridge)
+        if any(kw in combined for kw in ['route', 'autoroute', 'pont', 'poussière', 'pollution', 'hydrocarbures']):
+            impact['main_concerns'].append("Accélération de la dégradation chimique (pluies acides, suie).")
+            impact['engineering_advice'].append("Application d'un hydrofuge oléofuge haute performance.")
+            impact['engineering_advice'].append("Nettoyage périodique régulier (tous les 6 mois).")
+
+        # Fallback if no keywords but project exists
+        if not impact['main_concerns']:
+            impact['main_concerns'].append("Risque général lié à la modification de l'environnement immédiat.")
+            impact['engineering_advice'].append("Surveillance visuelle mensuelle durant toute la phase de projet.")
+            
+        return impact
+
+    def calculate_vibration_impact(self, distance_m, project_type, intensity='medium', degradations=None):
+        """
+        Vibration impact via exponential attenuation law:
+        V_impact = V_source * e^(-k * d)
+        Returns dict: v_impact, risk_label, risk_color, severity_boost, recommendations.
+        """
+        import math
+        
+        k_values     = {'tramway': 0.030, 'route': 0.020, 'tunnel': 0.050, 'chantier': 0.025}
+        v_source_map = {'low': 5.0, 'medium': 15.0, 'high': 30.0}
+        
+        k          = k_values.get(project_type, 0.025)
+        v_source   = v_source_map.get(intensity, 15.0)
+        distance_m = max(float(distance_m), 1.0)
+        v_impact   = v_source * math.exp(-k * distance_m)
+
+        # Risk classification (DIN 4150-3 inspired thresholds)
+        if v_impact >= 10.0:
+            risk_label, risk_color = 'CRITIQUE', (220, 38, 38)
+        elif v_impact >= 3.0:
+            risk_label, risk_color = 'ELEVE', (234, 88, 12)
+        elif v_impact >= 0.5:
+            risk_label, risk_color = 'MODERE', (217, 119, 6)
+        else:
+            risk_label, risk_color = 'FAIBLE', (22, 163, 74)
+
+        # Severity boost: cracks + close tramway -> CRITIQUE
+        has_cracks = any(d.get('type') == 'fissures' for d in (degradations or []))
+        severity_boost = False
+        if risk_label in ('CRITIQUE', 'ELEVE') and has_cracks and distance_m <= 50:
+            severity_boost = True
+            risk_label, risk_color = 'CRITIQUE', (220, 38, 38)
+
+        # Specific recommendations
+        recs = []
+        if risk_label == 'CRITIQUE':
+            recs += [
+                f"Installation URGENTE de capteurs sismiques sur le monument.",
+                f"Limitation de vitesse du {project_type.capitalize()} a 20 km/h dans la zone.",
+                "Pose de fissuromètres numeriques sur toutes les fissures detectees.",
+                "Suspension des travaux si V_impact depasse 5 mm/s en continu.",
+            ]
+        elif risk_label == 'ELEVE':
+            recs += [
+                "Installation de capteurs de surveillance vibratoire.",
+                "Inspection mensuelle des fissures existantes.",
+                "Etude geotechnique G2 avant demarrage des travaux.",
+            ]
+        elif risk_label == 'MODERE':
+            recs += [
+                "Surveillance trimestrielle de l'etat du monument.",
+                "Rapport vibratoire semestriel exige du maitre d'oeuvre.",
+            ]
+        else:
+            recs += ["Impact faible. Surveillance annuelle suffisante."]
+
+        return {
+            'v_source': v_source, 'k': k, 'distance_m': distance_m,
+            'v_impact': round(v_impact, 4), 'risk_label': risk_label,
+            'risk_color': risk_color, 'severity_boost': severity_boost,
+            'recommendations': recs,
+        }
+
     def _estimate_duration(self, degradations):
         """Estimer la durée totale de restauration"""
         durations = {

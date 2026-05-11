@@ -7,6 +7,10 @@
     <title>Scanner — ASL-3D</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Leaflet CSS & JS pour la carte -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body>
@@ -18,41 +22,45 @@
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
-                <a href="/" class="nav-item"><span class="nav-icon"><i
+                <a href="/" class="nav-item" title="Tableau de bord"><span class="nav-icon"><i
                             class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
-                <a href="/projects" class="nav-item"><span class="nav-icon"><i
+                <a href="/projects" class="nav-item" title="Gestion Projets"><span class="nav-icon"><i
                             class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
-                <a href="/scanner" class="nav-item active"><span class="nav-icon"><i
+                <a href="/scanner" class="nav-item active" title="Scanner"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
-                <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
-                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
-                <a href="/analysis" class="nav-item"><span class="nav-icon"><i
+                <a href="/geospatial-3d" class="nav-item" title="Reconstruction & Jumeau Numérique"><span class="nav-icon"><i
+                            class="ph-duotone ph-globe-hemisphere-west"></i></span><span>Reconstruction & Jumeau</span></a>
+                <a href="/analysis" class="nav-item" title="Analyse IA"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
-                <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
+                <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
                             class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
+                <a href="/urban-assessment" class="nav-item" title="Impact Urbain"><span class="nav-icon"><i
+                            class="ph-duotone ph-buildings"></i></span><span>Impact Urbain</span></a>
+                <a href="/profile" class="nav-item" title="Mon Profil"><span class="nav-icon"><i
+                            class="ph-duotone ph-user"></i></span><span>Mon Profil</span></a>
             </nav>
-            <div class="sidebar-footer">
-                <div
-                    style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
-                    {% if user.avatar_url %}
-                    <img src="{{ user.avatar_url }}"
-                        style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--accent);">
-                    {% else %}
-                    <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
-                    {% endif %}
-                    <div>
-                        <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
-                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>
-                    </div>
-                </div>
-                <a href="/logout"
-                    style="display:flex;align-items:center;gap:0.5rem;color:var(--text-muted);font-size:0.8rem;text-decoration:none;">
-                    <i class="ph-bold ph-sign-out"></i> Déconnexion
-                </a>
-            </div>
         </aside>
 
         <div class="main-wrapper">
+            <header class="main-header">
+                <div class="header-logo-mobile">
+                    <i class="ph-fill ph-bank"></i>
+                    <span>ASL-3D</span>
+                </div>
+                <div class="header-user">
+                    <div class="user-info-pill">
+                        {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="Avatar">
+                        {% else %}
+                        <i class="ph-fill ph-user-circle" style="font-size:1.8rem;color:var(--accent);"></i>
+                        {% endif %}
+                        <span class="user-name">{{ user.name }}</span>
+                    </div>
+                    <a href="/logout" class="logout-btn-header">
+                        <i class="ph-bold ph-sign-out"></i> Déconnexion
+                    </a>
+                </div>
+            </header>
             <main class="page-content">
                 <div class="page-header">
                     <div class="breadcrumb"><i class="ph-fill ph-camera" style="margin-right:4px;"></i> Scanner</div>
@@ -83,15 +91,25 @@
                                 <input type="text" name="project_name" id="project_name" class="select-input"
                                     placeholder="Ex: Campagne 2026" required style="color:var(--text-primary);">
                             </div>
-                            <div class="option-group">
+                            <div class="option-group" style="position: relative;">
                                 <label for="location">Localisation</label>
                                 <input type="text" name="location" id="location" class="select-input"
-                                    placeholder="Ex: Alger, Médina" style="color:var(--text-primary);">
+                                    placeholder="Rechercher une adresse..." autocomplete="off" style="color:var(--text-primary);">
+                                <div id="location-suggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 8px; z-index: 1000; display: none; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
                             </div>
                             <div class="option-group">
                                 <label for="description">Description</label>
                                 <input type="text" name="description" id="description" class="select-input"
                                     placeholder="Notes complémentaires..." style="color:var(--text-primary);">
+                            </div>
+                            <!-- Map for Coordinates -->
+                            <div class="option-group" style="grid-column: span 2;">
+                                <label><i class="ph-duotone ph-map-pin"></i> Position Géographique (Cliquez sur la carte)</label>
+                                <div id="map" style="height: 250px; border-radius: 8px; border: 1px solid var(--glass-border); margin-bottom: 0.5rem; z-index: 1;"></div>
+                                <div style="display:flex;gap:1rem;">
+                                    <input type="text" name="latitude" id="latitude" class="select-input" placeholder="Latitude" readonly style="color:var(--text-primary); background:var(--bg-lighter);">
+                                    <input type="text" name="longitude" id="longitude" class="select-input" placeholder="Longitude" readonly style="color:var(--text-primary); background:var(--bg-lighter);">
+                                </div>
                             </div>
                         </div>
 
@@ -129,7 +147,7 @@
                             <i class="ph-bold ph-magnifying-glass" style="margin-right:8px;"></i> Analyser les
                             Dégradations
                         </a>
-                        <a href="/reconstruction?project_id={{ new_project.id }}" class="btn btn-primary">
+                        <a href="/geospatial-3d?project_id={{ new_project.id }}" class="btn btn-primary">
                             <i class="ph-bold ph-cube" style="margin-right:8px;"></i> Reconstruire en 3D
                         </a>
                     </div>
@@ -159,7 +177,7 @@
                                     p.status.upper() }}</span>
                                 <a href="/analysis?project_id={{ p.id }}" class="btn btn-secondary"
                                     style="font-size:0.78rem;padding:0.4rem 0.9rem;">Analyser</a>
-                                <a href="/reconstruction?project_id={{ p.id }}" class="btn btn-primary"
+                                <a href="/geospatial-3d?project_id={{ p.id }}" class="btn btn-primary"
                                     style="font-size:0.78rem;padding:0.4rem 0.9rem;">3D</a>
                             </div>
                         </div>
@@ -171,11 +189,104 @@
             <footer class="footer">
                 <div class="footer-content">
                     <p>&copy; 2026 ASL-3D</p>
-                    <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
                 </div>
             </footer>
         </div>
     </div>
+
+    <!-- Script d'initialisation de la carte Leaflet et Autocomplétion -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Centré sur l'Algérie par défaut
+            var map = L.map('map').setView([36.75, 3.04], 6);
+            
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO'
+            }).addTo(map);
+            
+            var marker;
+            
+            function updateMapAndMarker(lat, lng, name) {
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lng;
+                if (name) document.getElementById('location').value = name;
+                
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                marker = L.marker([lat, lng]).addTo(map);
+                map.setView([lat, lng], 14);
+            }
+
+            map.on('click', function(e) {
+                var lat = e.latlng.lat.toFixed(6);
+                var lng = e.latlng.lng.toFixed(6);
+                updateMapAndMarker(lat, lng, null);
+                
+                // Optional: Reverse geocoding to fill the location name
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.display_name) {
+                            document.getElementById('location').value = data.display_name;
+                        }
+                    });
+            });
+
+            // Autocomplétion
+            const locationInput = document.getElementById('location');
+            const suggestionsBox = document.getElementById('location-suggestions');
+            let timeout = null;
+
+            locationInput.addEventListener('input', function() {
+                clearTimeout(timeout);
+                const query = this.value;
+                
+                if (query.length < 3) {
+                    suggestionsBox.style.display = 'none';
+                    return;
+                }
+
+                timeout = setTimeout(() => {
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+                        .then(response => response.json())
+                        .then(data => {
+                            suggestionsBox.innerHTML = '';
+                            if (data.length > 0) {
+                                data.forEach(place => {
+                                    const div = document.createElement('div');
+                                    div.style.padding = '10px 15px';
+                                    div.style.cursor = 'pointer';
+                                    div.style.borderBottom = '1px solid var(--glass-border)';
+                                    div.style.fontSize = '0.9rem';
+                                    div.textContent = place.display_name;
+                                    
+                                    div.addEventListener('mouseover', () => { div.style.backgroundColor = 'var(--bg-lighter)'; });
+                                    div.addEventListener('mouseout', () => { div.style.backgroundColor = 'transparent'; });
+                                    
+                                    div.addEventListener('click', () => {
+                                        updateMapAndMarker(place.lat, place.lon, place.display_name);
+                                        suggestionsBox.style.display = 'none';
+                                    });
+                                    suggestionsBox.appendChild(div);
+                                });
+                                suggestionsBox.style.display = 'block';
+                            } else {
+                                suggestionsBox.style.display = 'none';
+                            }
+                        })
+                        .catch(() => { suggestionsBox.style.display = 'none'; });
+                }, 400); // 400ms debounce
+            });
+
+            // Cacher les suggestions si clic ailleurs
+            document.addEventListener('click', function(e) {
+                if (e.target !== locationInput && e.target !== suggestionsBox) {
+                    suggestionsBox.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

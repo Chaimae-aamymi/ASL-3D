@@ -188,43 +188,45 @@
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
-                <a href="/" class="nav-item"><span class="nav-icon"><i
+                <a href="/" class="nav-item" title="Tableau de bord"><span class="nav-icon"><i
                             class="ph-duotone ph-squares-four"></i></span><span>Tableau de bord</span></a>
-                <a href="/projects" class="nav-item active"><span class="nav-icon"><i
+                <a href="/projects" class="nav-item active" title="Gestion Projets"><span class="nav-icon"><i
                             class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
-                <a href="/scanner" class="nav-item"><span class="nav-icon"><i
+                <a href="/scanner" class="nav-item" title="Scanner"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
-                <a href="/reconstruction" class="nav-item"><span class="nav-icon"><i
-                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
-                <a href="/analysis" class="nav-item"><span class="nav-icon"><i
+                <a href="/geospatial-3d" class="nav-item" title="Reconstruction & Jumeau Numérique"><span class="nav-icon"><i
+                            class="ph-duotone ph-globe-hemisphere-west"></i></span><span>Reconstruction & Jumeau</span></a>
+                <a href="/analysis" class="nav-item" title="Analyse IA"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
-                <a href="/restoration-guide" class="nav-item"><span class="nav-icon"><i
+                <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
                             class="ph-duotone ph-clipboard-text"></i></span><span>Guide Restauration</span></a>
-                <a href="/profile" class="nav-item"><span class="nav-icon"><i
+                <a href="/urban-assessment" class="nav-item" title="Impact Urbain"><span class="nav-icon"><i
+                            class="ph-duotone ph-buildings"></i></span><span>Impact Urbain</span></a>
+                <a href="/profile" class="nav-item" title="Mon Profil"><span class="nav-icon"><i
                             class="ph-duotone ph-user"></i></span><span>Mon Profil</span></a>
             </nav>
-            <div class="sidebar-footer">
-                <div
-                    style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:0.8rem;">
-                    {% if user.avatar_url %}
-                    <img src="{{ user.avatar_url }}"
-                        style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--accent);">
-                    {% else %}
-                    <i class="ph-fill ph-user-circle" style="font-size:1.5rem;color:var(--accent);"></i>
-                    {% endif %}
-                    <div>
-                        <p style="font-size:0.85rem;font-weight:600;margin:0;">{{ user.name }}</p>
-                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0;">{{ user.role }}</p>
-                    </div>
-                </div>
-                <a href="/logout"
-                    style="display:flex;align-items:center;gap:0.5rem;color:var(--text-muted);font-size:0.8rem;text-decoration:none;">
-                    <i class="ph-bold ph-sign-out"></i> Déconnexion
-                </a>
-            </div>
         </aside>
 
         <div class="main-wrapper">
+            <header class="main-header">
+                <div class="header-logo-mobile">
+                    <i class="ph-fill ph-bank"></i>
+                    <span>ASL-3D</span>
+                </div>
+                <div class="header-user">
+                    <div class="user-info-pill">
+                        {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="Avatar">
+                        {% else %}
+                        <i class="ph-fill ph-user-circle" style="font-size:1.8rem;color:var(--accent);"></i>
+                        {% endif %}
+                        <span class="user-name">{{ user.name }}</span>
+                    </div>
+                    <a href="/logout" class="logout-btn-header">
+                        <i class="ph-bold ph-sign-out"></i> Déconnexion
+                    </a>
+                </div>
+            </header>
             <main class="page-content">
                 <div class="page-header">
                     <div class="breadcrumb"><i class="ph-fill ph-folder-open" style="margin-right:4px;"></i> Gestion des
@@ -289,13 +291,30 @@
                             <a href="/analysis?project_id={{ p.id }}" class="action-btn btn-view">
                                 <i class="ph-bold ph-eye"></i> Analyse
                             </a>
-                            <a href="/reconstruction?project_id={{ p.id }}" class="action-btn btn-view">
+                            <a href="/geospatial-3d?project_id={{ p.id }}" class="action-btn btn-view">
                                 <i class="ph-bold ph-cube"></i> Scanner 3D
                             </a>
-                            <a href="/restoration-guide" class="action-btn btn-view" style="grid-column: span 2;">
-                                <i class="ph-bold ph-file-pdf"></i> Rapport Restauration
+                            <button type="button" onclick="viewPhotos({{ p.id }}, '{{ p.name | escape }}')" class="action-btn btn-view" style="width:100%; cursor:pointer; border:none; grid-column: span 1;">
+                                <i class="ph-bold ph-images"></i> Photos
+                            </button>
+                            <a href="/restoration-guide" class="action-btn btn-view" style="grid-column: span 1;">
+                                <i class="ph-bold ph-file-pdf"></i> Rapport
                             </a>
-                            <form action="/delete_project" method="POST" style="grid-column: span 2;"
+
+                            <!-- ADD IMAGES ACTION -->
+                            <form action="/add_images" method="POST" enctype="multipart/form-data"
+                                style="grid-column: span 1;" id="addImgForm_{{ p.id }}">
+                                <input type="hidden" name="project_id" value="{{ p.id }}">
+                                <input type="file" name="files" multiple accept="image/*" id="fileInput_{{ p.id }}"
+                                    style="display:none;"
+                                    onchange="document.getElementById('addImgForm_{{ p.id }}').submit();">
+                                <button type="button" class="action-btn btn-edit" style="width:100%; cursor:pointer;"
+                                    onclick="document.getElementById('fileInput_{{ p.id }}').click();">
+                                    <i class="ph-bold ph-plus-circle"></i> Ajouter Photos
+                                </button>
+                            </form>
+
+                            <form action="/delete_project" method="POST" style="grid-column: span 1;"
                                 onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer définitivement ce projet ?');">
                                 <input type="hidden" name="project_id" value="{{ p.id }}">
                                 <button type="submit" class="action-btn btn-delete">
@@ -323,11 +342,83 @@
             <footer class="footer">
                 <div class="footer-content">
                     <p>&copy; 2026 ASL-3D</p>
-                    <p class="creator-credit">Créée avec <span class="heart">❤️</span> par AAMYMI Chaimae</p>
                 </div>
             </footer>
         </div>
     </div>
+
+    <!-- Photos Modal -->
+    <div id="photosModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; overflow-y:auto; padding:2rem; backdrop-filter: blur(5px);">
+        <div style="background:var(--bg-card); border-radius:16px; border: 1px solid var(--glass-border); padding:2rem; max-width:1000px; margin:auto; position:relative; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+            <button onclick="document.getElementById('photosModal').style.display='none'" style="position:absolute; top:1.5rem; right:1.5rem; background:var(--bg-lighter); border:none; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem; cursor:pointer; transition:0.2s;"><i class="ph-bold ph-x"></i></button>
+            
+            <h2 style="margin-top:0; display:flex; align-items:center; gap:0.5rem; color:var(--text-primary);">
+                <i class="ph-duotone ph-images" style="color:var(--accent);"></i> 
+                Photos : <span id="modalProjectName" style="color:var(--text-secondary); font-weight:normal;"></span>
+            </h2>
+            
+            <div id="photosLoader" style="display:none; text-align:center; padding:3rem; color:var(--text-muted);">
+                <i class="ph-duotone ph-spinner ph-spin" style="font-size:3rem;"></i>
+                <p>Chargement des photos...</p>
+            </div>
+            
+            <div id="photosGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:1rem; margin-top:2rem;">
+                <!-- Photos injetées via JS -->
+            </div>
+            
+            <div id="noPhotosMsg" style="display:none; text-align:center; padding:3rem; color:var(--text-muted);">
+                <i class="ph-duotone ph-image-broken" style="font-size:3rem; opacity:0.5;"></i>
+                <p>Aucune photo trouvée pour ce projet.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function viewPhotos(projectId, projectName) {
+            document.getElementById('modalProjectName').textContent = projectName;
+            const grid = document.getElementById('photosGrid');
+            const loader = document.getElementById('photosLoader');
+            const noPhotos = document.getElementById('noPhotosMsg');
+            
+            grid.innerHTML = '';
+            loader.style.display = 'block';
+            noPhotos.style.display = 'none';
+            document.getElementById('photosModal').style.display = 'block';
+            
+            fetch('/api/project/' + projectId + '/photos')
+                .then(response => response.json())
+                .then(data => {
+                    loader.style.display = 'none';
+                    if (data.photos && data.photos.length > 0) {
+                        data.photos.forEach(url => {
+                            const imgContainer = document.createElement('div');
+                            imgContainer.style.borderRadius = '8px';
+                            imgContainer.style.overflow = 'hidden';
+                            imgContainer.style.border = '1px solid var(--glass-border)';
+                            imgContainer.style.height = '150px';
+                            
+                            const img = document.createElement('img');
+                            img.src = url;
+                            img.style.width = '100%';
+                            img.style.height = '100%';
+                            img.style.objectFit = 'cover';
+                            img.style.cursor = 'pointer';
+                            img.onclick = () => window.open(url, '_blank');
+                            
+                            imgContainer.appendChild(img);
+                            grid.appendChild(imgContainer);
+                        });
+                    } else {
+                        noPhotos.style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    loader.style.display = 'none';
+                    noPhotos.style.display = 'block';
+                    console.error("Erreur de chargement des photos:", err);
+                });
+        }
+    </script>
 </body>
 
 </html>
