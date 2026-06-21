@@ -1,0 +1,38 @@
+# ASL-3D — Requirements Hugging Face Spaces (sans PostgreSQL ni GPU)
+
+# Web framework
+Flask==2.3.3
+Werkzeug==2.3.7
+Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
+
+# Base de données légère pour HF (SQLite)
+# psycopg2-binary retiré (PostgreSQL non dispo sur HF gratuit)
+
+cryptography>=41.0.0
+
+# Image processing
+numpy>=1.24.0
+Pillow>=9.5.0
+opencv-python-headless>=4.8.0
+scikit-image>=0.20.0
+scipy>=1.11.0
+
+# Deep Learning - YOLOv8 (CPU)
+ultralytics>=8.0.200
+
+# 3D export
+trimesh>=4.0.0
+
+# PDF generation
+fpdf2>=2.7.6
+
+# Visualization
+matplotlib>=3.7.0
+
+# Utilities
+requests>=2.31.0
+python-dotenv>=1.0.0
+authlib>=1.3.0
+prometheus-client>=0.17.0
+python-json-logger>=2.0.7

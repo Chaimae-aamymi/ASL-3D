@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <title>Scanner — ASL-3D</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -16,9 +17,12 @@
 <body>
     <div class="app-wrapper">
         <aside class="sidebar">
-            <div class="sidebar-logo"><span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
-                <h1>ASL-3D</h1>
-                <p class="tagline">Restauration Numérique Intelligente</p>
+            <div class="sidebar-logo">
+                <span class="logo-icon"><img src="{{ url_for('static', filename='logo.png') }}" alt="ASL-3D Logo" style="width:44px;height:44px;object-fit:contain;border-radius:10px;"></span>
+                <div class="logo-text">
+                    <h1>ASL-3D</h1>
+                    <p class="tagline">Restauration Numérique Intelligente</p>
+                </div>
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
@@ -28,8 +32,9 @@
                             class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
                 <a href="/scanner" class="nav-item active" title="Scanner"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
-                <a href="/geospatial-3d" class="nav-item" title="Reconstruction & Jumeau Numérique"><span class="nav-icon"><i
-                            class="ph-duotone ph-globe-hemisphere-west"></i></span><span>Reconstruction & Jumeau</span></a>
+                <a href="/reconstruction" class="nav-item" title="Reconstruction 3D"><span class="nav-icon"><i
+                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
+
                 <a href="/analysis" class="nav-item" title="Analyse IA"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
                 <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
@@ -44,7 +49,7 @@
         <div class="main-wrapper">
             <header class="main-header">
                 <div class="header-logo-mobile">
-                    <i class="ph-fill ph-bank"></i>
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="ASL-3D" style="width:30px;height:30px;object-fit:contain;border-radius:6px;">
                     <span>ASL-3D</span>
                 </div>
                 <div class="header-user">
@@ -147,7 +152,7 @@
                             <i class="ph-bold ph-magnifying-glass" style="margin-right:8px;"></i> Analyser les
                             Dégradations
                         </a>
-                        <a href="/geospatial-3d?project_id={{ new_project.id }}" class="btn btn-primary">
+                        <a href="/reconstruction?project_id={{ new_project.id }}" class="btn btn-primary">
                             <i class="ph-bold ph-cube" style="margin-right:8px;"></i> Reconstruire en 3D
                         </a>
                     </div>
@@ -177,7 +182,7 @@
                                     p.status.upper() }}</span>
                                 <a href="/analysis?project_id={{ p.id }}" class="btn btn-secondary"
                                     style="font-size:0.78rem;padding:0.4rem 0.9rem;">Analyser</a>
-                                <a href="/geospatial-3d?project_id={{ p.id }}" class="btn btn-primary"
+                                <a href="/reconstruction?project_id={{ p.id }}" class="btn btn-primary"
                                     style="font-size:0.78rem;padding:0.4rem 0.9rem;">3D</a>
                             </div>
                         </div>
@@ -290,3 +295,4 @@
 </body>
 
 </html>
+

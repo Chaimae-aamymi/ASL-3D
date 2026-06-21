@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <title>Vérifiez votre email — ASL-3D</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #0F172A;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Outfit', sans-serif;
+            padding: 1rem;
+        }
+        .verify-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 28px;
+            padding: 3rem 2.5rem;
+            max-width: 460px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+            animation: fadeUp 0.6s ease;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .verify-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(79,70,229,0.2), rgba(147,51,234,0.2));
+            border: 2px solid rgba(79,70,229,0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+        }
+        .verify-icon i { font-size: 2.5rem; color: #818CF8; }
+        h1 {
+            color: white;
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 0.8rem;
+        }
+        p {
+            color: rgba(255,255,255,0.55);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+        .email-highlight {
+            color: #818CF8;
+            font-weight: 600;
+        }
+        .btn-resend {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 0.85rem 2rem;
+            background: linear-gradient(135deg, #4F46E5, #9333EA);
+            color: white;
+            font-weight: 700;
+            border-radius: 14px;
+            text-decoration: none;
+            font-size: 0.95rem;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            width: 100%;
+        }
+        .btn-resend:hover { opacity: 0.85; }
+        .btn-login-link {
+            display: block;
+            margin-top: 1rem;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+        .btn-login-link:hover { color: white; }
+        .spam-note {
+            margin-top: 1.5rem;
+            padding: 0.8rem 1rem;
+            background: rgba(255,209,102,0.08);
+            border: 1px solid rgba(255,209,102,0.2);
+            border-radius: 10px;
+            color: rgba(255,209,102,0.8);
+            font-size: 0.8rem;
+        }
+        @media (max-width: 480px) {
+            .verify-card { padding: 2rem 1.5rem; }
+            h1 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="verify-card">
+        <div class="verify-icon">
+            <i class="ph-duotone ph-envelope-simple"></i>
+        </div>
+
+        <h1>Vérifiez votre email</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div style="padding:0.8rem 1rem;border-radius:10px;margin-bottom:1rem;
+                background:{% if category=='success' %}rgba(6,214,160,0.1){% else %}rgba(255,82,82,0.1){% endif %};
+                border:1px solid {% if category=='success' %}rgba(6,214,160,0.3){% else %}rgba(255,82,82,0.3){% endif %};
+                color:{% if category=='success' %}#06D6A0{% else %}#FF5252{% endif %};font-size:0.85rem;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <p>Un lien de vérification a été envoyé à :</p>
+        <p class="email-highlight">{{ email }}</p>
+        <p style="margin-top:0.8rem;">Cliquez sur le lien dans cet email pour activer votre compte ASL-3D.</p>
+
+        <div class="spam-note">
+            <i class="ph-bold ph-warning" style="margin-right:4px;"></i>
+            Si vous ne trouvez pas l'email, vérifiez votre dossier <strong>Spam / Courrier indésirable</strong>.
+        </div>
+
+        <form method="POST" action="/resend-verification">
+            <input type="hidden" name="email" value="{{ email }}">
+            <button type="submit" class="btn-resend">
+                <i class="ph-bold ph-paper-plane-tilt" style="margin-right:8px;"></i>
+                Renvoyer l'email de vérification
+            </button>
+        </form>
+
+        <a href="/login" class="btn-login-link">
+            <i class="ph-bold ph-arrow-left" style="margin-right:4px;"></i>
+            Retour à la connexion
+        </a>
+    </div>
+</body>
+</html>

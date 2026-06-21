@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    project: 'asl3d'
+
+scrape_configs:
+  # App Flask locale (python run.py sur Windows)
+  - job_name: 'asl3d-app-host'
+    static_configs:
+      - targets: ['host.docker.internal:5000']
+    metrics_path: /metrics
+
+  # App Flask dans Docker (docker compose up --build)
+  - job_name: 'asl3d-app-docker'
+    static_configs:
+      - targets: ['app:5000']
+    metrics_path: /metrics
+
+  # Prometheus lui-même
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node exporter (métriques système)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node_exporter:9100']

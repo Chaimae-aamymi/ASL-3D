@@ -1,7 +1,3 @@
-"""
-create_db.py — Cree la base de donnees asl3d_db et ses tables pour PostgreSQL
-Utilisation : python create_db.py
-"""
 import os
 import sys
 
@@ -12,7 +8,7 @@ except ImportError:
     print("[-] psycopg2 non installe. Executez : pip install psycopg2-binary")
     sys.exit(1)
 
-# Import app to use SQLAlchemy for table creation
+
 sys.path.insert(0, os.path.dirname(__file__))
 from app import app
 from models import db
@@ -31,7 +27,7 @@ try:
     cursor = conn.cursor()
 except Exception as e:
     print(f"[-] Impossible de se connecter a PostgreSQL : {e}")
-    print("   -> Assurez-vous que PostgreSQL est en cours d'execution.")
+    print("-> Assurez-vous que PostgreSQL est en cours d'execution.")
     sys.exit(1)
 
 print(f"[+] Connecte. Verification de la base '{DB_NAME}'...")

@@ -1,20 +1,25 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <title>Analyse IA — ASL-3D</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="{{ url_for('static', filename='js/fit_model_viewer.js') }}" defer></script>
 </head>
 
 <body>
     <div class="app-wrapper">
         <aside class="sidebar">
-            <div class="sidebar-logo"><span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
-                <h1>ASL-3D</h1>
-                <p class="tagline">Restauration Numérique Intelligente</p>
+            <div class="sidebar-logo">
+                <span class="logo-icon"><img src="{{ url_for('static', filename='logo.png') }}" alt="ASL-3D Logo" style="width:44px;height:44px;object-fit:contain;border-radius:10px;"></span>
+                <div class="logo-text">
+                    <h1>ASL-3D</h1>
+                    <p class="tagline">Restauration Numérique Intelligente</p>
+                </div>
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
@@ -24,8 +29,9 @@
                             class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
                 <a href="/scanner" class="nav-item" title="Scanner"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
-                <a href="/geospatial-3d" class="nav-item" title="Reconstruction & Jumeau Numérique"><span class="nav-icon"><i
-                            class="ph-duotone ph-globe-hemisphere-west"></i></span><span>Reconstruction & Jumeau</span></a>
+                <a href="/reconstruction" class="nav-item" title="Reconstruction 3D"><span class="nav-icon"><i
+                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
+
                 <a href="/analysis" class="nav-item active" title="Analyse IA"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
                 <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
@@ -40,7 +46,7 @@
         <div class="main-wrapper">
             <header class="main-header">
                 <div class="header-logo-mobile">
-                    <i class="ph-fill ph-bank"></i>
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="ASL-3D" style="width:30px;height:30px;object-fit:contain;border-radius:6px;">
                     <span>ASL-3D</span>
                 </div>
                 <div class="header-user">
@@ -135,40 +141,64 @@
                 {% if active_task and active_task.status == 'running' %}
                 <div id="analysis-progress-container"
                     style="margin-top:2rem;padding:2rem;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:14px;text-align:center;box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-                    <i class="ph-duotone ph-cpu" style="font-size:3rem;color:var(--accent);"></i>
+                    <i class="ph-duotone ph-cpu" style="font-size:3rem;color:var(--accent);animation:pulse 2s infinite;"></i>
                     <p style="margin-top:0.8rem;font-weight:600;font-size:1.2rem;">Analyse IA globale en cours...</p>
-                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem;">Traitement de toutes les images du projet avec YOLOv8.</p>
-                    
+
+                    <!-- Step message -->
+                    <p id="progress-message" style="font-size:0.85rem;color:var(--accent-2);margin-bottom:1.2rem;min-height:1.2em;transition:opacity 0.3s;">
+                        {{ active_task.message or 'Initialisation...' }}
+                    </p>
+
+                    <!-- Progress bar -->
                     <div style="width: 100%; max-width: 500px; margin: 0 auto; background: rgba(255,255,255,0.05); border-radius: 12px; overflow: hidden; height: 16px; border: 1px solid var(--glass-border);">
-                        <div id="progress-bar-fill" style="width: {{ active_task.progress or 0 }}%; height: 100%; background: linear-gradient(90deg, #6c63ff, #06d6a0); transition: width 0.5s ease-out;"></div>
+                        <div id="progress-bar-fill" style="width: {{ active_task.progress or 0 }}%; height: 100%; background: linear-gradient(90deg, #6c63ff, #06d6a0); transition: width 0.6s ease-out; border-radius: 12px;"></div>
                     </div>
                     <p id="progress-text" style="font-weight: 800; font-size: 1.5rem; margin-top: 0.8rem; color: var(--accent);">{{ active_task.progress or 0 }}%</p>
                 </div>
 
+                <style>
+                    @keyframes pulse {
+                        0%, 100% { opacity: 1; transform: scale(1); }
+                        50% { opacity: 0.7; transform: scale(1.08); }
+                    }
+                </style>
+
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
                         const taskId = {{ active_task.id }};
-                        const projectId = {{ selected_project_id }};
+                        const projectId = {{ selected_project_id or active_task.project_id }};
                         const barFill = document.getElementById('progress-bar-fill');
                         const progressText = document.getElementById('progress-text');
-                        
+                        const progressMessage = document.getElementById('progress-message');
+
                         const interval = setInterval(() => {
                             fetch(`/api/task_status/${taskId}`)
                                 .then(res => res.json())
                                 .then(data => {
+                                    // Update progress bar
                                     barFill.style.width = data.progress + '%';
                                     progressText.textContent = data.progress + '%';
-                                    
+
+                                    // Update step message with fade effect
+                                    if (data.message && data.message !== progressMessage.textContent) {
+                                        progressMessage.style.opacity = '0';
+                                        setTimeout(() => {
+                                            progressMessage.textContent = data.message;
+                                            progressMessage.style.opacity = '1';
+                                        }, 300);
+                                    }
+
                                     if (data.status === 'completed' || data.status === 'failed') {
                                         clearInterval(interval);
                                         window.location.href = `/analysis?project_id=${projectId}`;
                                     }
                                 })
                                 .catch(err => console.error("Erreur de suivi de progression:", err));
-                        }, 1000); // Check every 1 second
+                        }, 1000);
                     });
                 </script>
                 {% endif %}
+
 
                 <!-- ERROR INDICATOR -->
                 {% if active_task and active_task.status == 'failed' %}
@@ -235,45 +265,177 @@
                     </div>
 
                     <!-- IMAGES -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1.5rem;">
-                        <div>
-                            <h3><i class="ph-duotone ph-image" style="margin-right:6px;"></i> Photo Représentative</h3>
-                            {% set proj_folder = result.project.upload_folder %}
-                            <img src="/static/uploads/{{ proj_folder }}/{{ result.source_image }}" alt="Représentative"
-                                style="width:100%;max-height:300px;object-fit:contain;border-radius:10px;background:#0d1117;margin-top:0.5rem;">
-                        </div>
-                        <div>
-                            <h3><i class="ph-duotone ph-scan" style="margin-right:6px;"></i> Dégradations Détectées</h3>
-                            <img src="/static/analyses/results/{{ result.annotated_image }}" alt="Annotée YOLOv8"
-                                style="width:100%;max-height:300px;object-fit:contain;border-radius:10px;background:#0d1117;margin-top:0.5rem;border: 1px solid rgba(255,255,255,0.1)">
+                    {% set proj_folder = result.project.upload_folder %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.8rem; margin-bottom: 1rem;">
+                        <h3 style="margin: 0; font-size:1.15rem; display:flex; align-items:center; gap: 8px;"><i class="ph-duotone ph-aperture" style="color: var(--accent); font-size: 1.3rem;"></i> Comparaison des Visuels</h3>
+                        <div class="image-view-tabs" style="display: flex; gap: 0.25rem; background: rgba(255,255,255,0.03); padding: 4px; border-radius: 8px; border: 1px solid var(--border);">
+                            <button onclick="setViewMode('slider')" id="btn-view-slider" class="view-tab-btn active" style="padding: 0.4rem 1rem; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: var(--bg-surface); color: var(--text-primary); display:flex; align-items:center; gap:6px;">
+                                <i class="ph-bold ph-sliders-horizontal"></i> Superposé Interactif
+                            </button>
+                            <button onclick="setViewMode('side-by-side')" id="btn-view-side" class="view-tab-btn" style="padding: 0.4rem 1rem; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text-secondary); display:flex; align-items:center; gap:6px;">
+                                <i class="ph-bold ph-columns"></i> Côte-à-Côte
+                            </button>
                         </div>
                     </div>
+
+                    <!-- VIEW 1: SUPERPOSED SLIDER -->
+                    <div id="view-slider" style="display: block; margin-bottom: 2rem;">
+                        <div id="comparison-container" class="slider-comparison-container" style="position: relative; width: 100%; max-width: 100%; height: 500px; margin: 0 auto; overflow: hidden; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: #0b0f17; user-select: none; box-shadow: var(--shadow);">
+                            <!-- Original Image (Bottom Layer) -->
+                            <img src="/static/uploads/{{ proj_folder }}/{{ result.source_image }}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain;" />
+                            
+                            <!-- Annotated Image (Top Layer) -->
+                            <div id="annotated-slider-wrapper" style="position: absolute; top: 0; left: 0; width: 50%; height: 100%; overflow: hidden; border-right: 3px solid var(--accent-2); box-shadow: 0 0 15px rgba(0,245,255,0.5);">
+                                <img src="/static/analyses/results/{{ result.annotated_image }}" style="position: absolute; top: 0; left: 0; height: 100%; object-fit: contain;" id="annotated-slider-img" />
+                            </div>
+                            
+                            <!-- Range Slider (Overlay) -->
+                            <input type="range" min="0" max="100" value="50" id="comparison-range-slider" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; z-index: 10;" />
+                            
+                            <!-- Slideline Visual representation -->
+                            <div id="slider-split-handle" style="position: absolute; top: 0; left: 50%; width: 44px; height: 44px; border-radius: 50%; background: var(--bg-surface); border: 3px solid var(--accent-2); transform: translate(-50%, -50%); top: 50%; pointer-events: none; z-index: 5; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0,0,0,0.6);">
+                                <i class="ph-bold ph-arrows-left-right" style="color: var(--accent-2); font-size: 1.2rem;"></i>
+                            </div>
+                            
+                            <!-- Badges -->
+                            <span style="position: absolute; bottom: 15px; right: 15px; padding: 6px 12px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); pointer-events: none; z-index: 4;">
+                                <i class="ph-bold ph-image" style="margin-right: 4px; color: var(--text-muted);"></i> Originale
+                            </span>
+                            <span style="position: absolute; bottom: 15px; left: 15px; padding: 6px 12px; background: rgba(99, 102, 241, 0.8); backdrop-filter: blur(8px); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: #fff; pointer-events: none; z-index: 4;">
+                                <i class="ph-bold ph-cpu" style="margin-right: 4px; color: var(--accent-2);"></i> Détection IA
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- VIEW 2: SIDE-BY-SIDE -->
+                    <div id="view-side-by-side" style="display: none; margin-bottom: 2rem;">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:1.5rem;">
+                            <div>
+                                <h4 style="margin: 0 0 0.5rem 0; color: var(--text-secondary); font-size: 0.9rem; font-weight:600;"><i class="ph-bold ph-image" style="margin-right:6px; color:var(--text-muted);"></i> Photo Représentative</h4>
+                                <img src="/static/uploads/{{ proj_folder }}/{{ result.source_image }}" alt="Représentative"
+                                    style="width:100%;height:400px;object-fit:contain;border-radius:12px;background:#0d1117;border: 1px solid rgba(255,255,255,0.05)">
+                            </div>
+                            <div>
+                                <h4 style="margin: 0 0 0.5rem 0; color: var(--text-secondary); font-size: 0.9rem; font-weight:600;"><i class="ph-bold ph-scan" style="margin-right:6px; color:var(--accent-2);"></i> Dégradations Détectées</h4>
+                                <img src="/static/analyses/results/{{ result.annotated_image }}" alt="Annotée YOLOv8"
+                                    style="width:100%;height:400px;object-fit:contain;border-radius:12px;background:#0d1117;border: 1px solid rgba(255,255,255,0.1)">
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- DEGRADATION CARDS -->
                     {% if result.degradations %}
-                    <div style="margin-top:2rem;">
-                        <h3><i class="ph-duotone ph-list-checks" style="margin-right:8px;"></i> Détail des Dégradations
-                            ({{ (result.degradations or [])|length }})</h3>
+                    <div style="margin-top:2.5rem;">
+                        <h3 style="margin-bottom: 1.2rem; font-size:1.15rem; display:flex; align-items:center; gap: 8px;"><i class="ph-duotone ph-list-checks" style="color: var(--accent); font-size: 1.3rem;"></i> Détail des Dégradations</h3>
+                        
+                        <!-- Pathology Counts Widget -->
+                        <div class="pathology-summary-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                            <!-- Fissures -->
+                            <div class="path-summary-card" style="background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 0.8rem; transition: var(--transition);">
+                                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(255, 107, 107, 0.1); display: flex; align-items: center; justify-content: center; color: #ff6b6b; font-size: 1.3rem;">
+                                    <i class="ph-duotone ph-warning-octagon"></i>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">Fissures</h4>
+                                    <p style="margin: 0; font-size: 1.4rem; font-weight: 700; color: #ff6b6b;" id="count-fissures">0</p>
+                                </div>
+                            </div>
+                            <!-- Humidité -->
+                            <div class="path-summary-card" style="background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 0.8rem; transition: var(--transition);">
+                                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(99, 102, 241, 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 1.3rem;">
+                                    <i class="ph-duotone ph-drop"></i>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">Humidité</h4>
+                                    <p style="margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--accent);" id="count-humidite">0</p>
+                                </div>
+                            </div>
+                            <!-- Effritement -->
+                            <div class="path-summary-card" style="background: var(--bg-card); border-radius: 12px; padding: 1rem; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 0.8rem; transition: var(--transition);">
+                                <div style="width: 42px; height: 42px; border-radius: 8px; background: rgba(255, 163, 108, 0.1); display: flex; align-items: center; justify-content: center; color: #ffa36c; font-size: 1.3rem;">
+                                    <i class="ph-duotone ph-squares-four"></i>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">Effritement</h4>
+                                    <p style="margin: 0; font-size: 1.4rem; font-weight: 700; color: #ffa36c;" id="count-effritement">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Dynamic Pills Filter -->
+                        <div class="filter-bar" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; background: rgba(255, 255, 255, 0.02); padding: 5px; border-radius: 30px; border: 1px solid var(--border); width: fit-content;">
+                            <button class="filter-pill active" onclick="filterDegradations('all')" data-type="all" style="padding: 0.45rem 1.1rem; border-radius: 20px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: var(--accent); color: white; display: flex; align-items: center; gap: 6px;">
+                                Tout <span class="count-badge" style="background: rgba(255,255,255,0.2); padding: 1px 6px; border-radius: 10px; font-size: 0.75rem;">{{ (result.degradations or [])|length }}</span>
+                            </button>
+                            <button class="filter-pill" onclick="filterDegradations('fissures')" data-type="fissures" style="padding: 0.45rem 1.1rem; border-radius: 20px; border: 1px solid var(--border); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+                                Fissures <span class="count-badge" style="background: rgba(255,107,107,0.12); color:#ff6b6b; padding: 1px 6px; border-radius: 10px; font-size: 0.75rem;">0</span>
+                            </button>
+                            <button class="filter-pill" onclick="filterDegradations('humidite')" data-type="humidite" style="padding: 0.45rem 1.1rem; border-radius: 20px; border: 1px solid var(--border); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+                                Humidité <span class="count-badge" style="background: rgba(99,102,241,0.12); color:var(--accent); padding: 1px 6px; border-radius: 10px; font-size: 0.75rem;">0</span>
+                            </button>
+                            <button class="filter-pill" onclick="filterDegradations('effritement')" data-type="effritement" style="padding: 0.45rem 1.1rem; border-radius: 20px; border: 1px solid var(--border); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+                                Effritement <span class="count-badge" style="background: rgba(255,163,108,0.12); color:#ffa36c; padding: 1px 6px; border-radius: 10px; font-size: 0.75rem;">0</span>
+                            </button>
+                        </div>
+                        
                         <div
-                            style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-top:1rem;">
+                            style="display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:1rem;margin-top:1rem;">
                             {% for deg in result.degradations %}
                             {% set conf = deg.get('confidence',0)|float %}
-                            {% set deg_color = '#ff6b6b' if deg.get('severity') in ('haute','critique') else ('#ffd166'
-                            if deg.get('severity') == 'moyenne' else '#06d6a0') %}
-                            <div class="deg-card" data-x="{{ range(-10, 10)|random * 0.1 }}"
-                                data-y="{{ range(-10, 10)|random * 0.1 }}" data-z="{{ range(-10, 10)|random * 0.1 }}"
-                                style="padding:1.1rem;background:var(--bg-card);border-radius:10px;border-top:3px solid {{ deg_color }}; cursor: pointer; transition: transform 0.2s;"
-                                onmouseover="this.style.transform='scale(1.02)'"
-                                onmouseout="this.style.transform='scale(1)'">
-                                <h5 style="margin:0 0 0.4rem;color:{{ deg_color }};text-transform:capitalize;">{{
-
-                                    deg.get('type','?') }}</h5>
-                                <p style="font-size:0.8rem;margin:0.2rem 0;"><strong>Sévérité :</strong> {{
-                                    deg.get('severity','?') }}</p>
-                                <p style="font-size:0.8rem;margin:0.2rem 0;"><strong>Confiance :</strong> {{ (conf *
-                                    100)|int }}%</p>
-                                <div style="height:4px;background:#2a3347;border-radius:2px;margin-top:0.6rem;">
+                            {% set dtype = deg.get('type','?') %}
+                            
+                            {# Dynamic styling based on pathology type #}
+                            {% if dtype == 'fissures' %}
+                                {% set icon_class = 'ph-duotone ph-warning-octagon' %}
+                                {% set deg_color = '#ff6b6b' %}
+                            {% elif dtype == 'humidite' %}
+                                {% set icon_class = 'ph-duotone ph-drop' %}
+                                {% set deg_color = 'var(--accent)' %}
+                            {% elif dtype == 'effritement' %}
+                                {% set icon_class = 'ph-duotone ph-squares-four' %}
+                                {% set deg_color = '#ffa36c' %}
+                            {% else %}
+                                {% set icon_class = 'ph-duotone ph-question' %}
+                                {% set deg_color = '#cbd5e1' %}
+                            {% endif %}
+                            
+                            <div class="deg-card"
+                                data-type="{{ dtype }}"
+                                data-image="{{ deg.get('source_image', result.source_image) }}"
+                                data-proj-folder="{{ proj_folder }}"
+                                data-bbox-x="{{ deg.get('location', {}).get('x', 0) }}"
+                                data-bbox-y="{{ deg.get('location', {}).get('y', 0) }}"
+                                data-bbox-w="{{ deg.get('location', {}).get('width', 0) }}"
+                                data-bbox-h="{{ deg.get('location', {}).get('height', 0) }}"
+                                data-severity="{{ deg.get('severity','?') }}"
+                                data-confidence="{{ (deg.get('confidence',0)|float * 100)|int }}"
+                                data-dtype-label="{{ dtype|capitalize }}"
+                                data-color="{{ deg_color }}"
+                                style="padding:1.1rem;background:var(--bg-card);border-radius:12px;border: 1px solid rgba(255,255,255,0.04); border-left:4px solid {{ deg_color }}; cursor: pointer; transition: all 0.25s ease;"
+                                onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)';"
+                                onmouseout="this.style.transform='none'; this.style.boxShadow='none';"
+                                onclick="openDegModal(this)">
+                                
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 0.6rem;">
+                                    <h5 style="margin:0;color:var(--text-primary);text-transform:capitalize;font-size:0.92rem; font-weight: 600; display:flex; align-items:center; gap: 8px;">
+                                        <span style="color:{{ deg_color }}; font-size:1.1rem; display:flex;"><i class="{{ icon_class }}"></i></span>
+                                        {{ dtype }}
+                                    </h5>
+                                    <span style="font-size:0.68rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.04); color: var(--text-muted); font-family: monospace;">
+                                        {% if deg.get('location') %}
+                                            [{{ deg.get('location').get('width') }}x{{ deg.get('location').get('height') }} px]
+                                        {% else %}
+                                            Global
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                
+                                <p style="font-size:0.8rem;margin:0.2rem 0;color: var(--text-secondary);"><strong>Sévérité :</strong> <span style="text-transform: capitalize; color: {{ deg_color }}; font-weight: 500;">{{ deg.get('severity','?') }}</span></p>
+                                <p style="font-size:0.8rem;margin:0.2rem 0;color: var(--text-secondary);"><strong>Confiance :</strong> <span style="font-weight: 600; color: var(--text-primary);">{{ (conf * 100)|int }}%</span></p>
+                                
+                                <div style="height:5px;background:#2a3347;border-radius:10px;margin-top:0.7rem; overflow: hidden;">
                                     <div
-                                        style="height:4px;background:{{ deg_color }};border-radius:2px;width:{{ (conf*100)|int }}%;">
+                                        style="height:100%;background:{{ deg_color }};border-radius:10px;width:{{ (conf*100)|int }}%; transition: width 0.5s ease-in-out;">
                                     </div>
                                 </div>
                             </div>
@@ -282,56 +444,322 @@
                     </div>
                     {% endif %}
 
-                    <!-- INTERACTIVE 3D CONTEXT -->
-                    <div style="margin-top:2rem;">
-                        <h3><i class="ph-duotone ph-globe-hemisphere-west" style="margin-right:8px;"></i> Visualisation 3D Interactive
-                        </h3>
-                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Cliquez sur une carte
-                            de dégradation ci-dessus pour centrer le modèle 3D sur la zone affectée.</p>
-
-                        <div
-                            style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; position: relative;">
-                            <script type="module"
-                                src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
-                            <model-viewer id="hybrid3Dviewer" src="/static/models/model_{{ result.project_id }}.glb"
-                                alt="Modèle 3D du projet" auto-rotate camera-controls camera-orbit="0deg 75deg 105%"
-                                style="width: 100%; height: 400px; background-color: #0d1117;" interaction-prompt="none"
-                                fallback-image="/static/avatars/default.png" poster="/static/avatars/default.png">
-                                <!-- Interactive hotspot fallback target -->
-                                <button slot="hotspot-demo" class="hotspot" data-position="0 0 0" data-normal="0 1 0"
-                                    style="display:none;"></button>
-                            </model-viewer>
+                    <!-- PHOTO PREVIEW PANEL (click a card to populate) -->
+                    <div id="deg-preview-panel" style="margin-top:2.5rem; display:none;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <h3 style="margin:0; font-size:1.15rem; display:flex; align-items:center; gap:8px;">
+                                <i class="ph-duotone ph-image-square" style="color:var(--accent); font-size:1.3rem;"></i>
+                                Photo &amp; Localisation de la Dégradation
+                            </h3>
+                            <button onclick="closeDegPanel()" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.8rem;cursor:pointer;color:var(--text-muted);font-size:0.82rem;display:flex;align-items:center;gap:6px;">
+                                <i class="ph-bold ph-x"></i> Fermer
+                            </button>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 280px; gap:1.5rem; align-items:start;">
+                            <!-- Canvas with bounding box -->
+                            <div style="position:relative; border-radius:14px; overflow:hidden; border:1px solid var(--glass-border); background:#0d1117;">
+                                <canvas id="deg-canvas" style="width:100%; display:block; border-radius:14px;"></canvas>
+                                <div id="canvas-loader" style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,17,23,0.85);border-radius:14px;">
+                                    <i class="ph-duotone ph-spinner" style="font-size:2.5rem;color:var(--accent);animation:spin 1s linear infinite;"></i>
+                                </div>
+                            </div>
+                            <!-- Info panel -->
+                            <div style="background:var(--bg-card);border-radius:14px;padding:1.4rem;border:1px solid rgba(255,255,255,0.05);">
+                                <p style="font-size:0.72rem;color:var(--text-muted);margin:0 0 0.8rem;text-transform:uppercase;letter-spacing:.08em;">Détail de la Détection</p>
+                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.2rem;">
+                                    <span id="panel-icon" style="font-size:2rem;"></span>
+                                    <div>
+                                        <p id="panel-type" style="margin:0;font-size:1.1rem;font-weight:700;text-transform:capitalize;">—</p>
+                                        <p id="panel-severity" style="margin:0;font-size:0.8rem;color:var(--text-muted);">—</p>
+                                    </div>
+                                </div>
+                                <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:1rem;display:grid;gap:0.8rem;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-size:0.8rem;color:var(--text-muted);">Confiance IA</span>
+                                        <span id="panel-conf" style="font-weight:700;font-size:0.9rem;">—</span>
+                                    </div>
+                                    <div style="height:6px;background:#2a3347;border-radius:10px;overflow:hidden;">
+                                        <div id="panel-conf-bar" style="height:100%;border-radius:10px;width:0%;transition:width 0.6s ease;"></div>
+                                    </div>
+                                    <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:0.8rem;">
+                                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0 0 0.5rem;text-transform:uppercase;letter-spacing:.08em;">Position (pixels)</p>
+                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                                            <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:0.6rem;">
+                                                <p style="margin:0;font-size:0.7rem;color:var(--text-muted);">X</p>
+                                                <p id="panel-x" style="margin:0;font-weight:600;font-size:0.95rem;">—</p>
+                                            </div>
+                                            <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:0.6rem;">
+                                                <p style="margin:0;font-size:0.7rem;color:var(--text-muted);">Y</p>
+                                                <p id="panel-y" style="margin:0;font-weight:600;font-size:0.95rem;">—</p>
+                                            </div>
+                                            <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:0.6rem;">
+                                                <p style="margin:0;font-size:0.7rem;color:var(--text-muted);">Largeur</p>
+                                                <p id="panel-w" style="margin:0;font-weight:600;font-size:0.95rem;">—</p>
+                                            </div>
+                                            <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:0.6rem;">
+                                                <p style="margin:0;font-size:0.7rem;color:var(--text-muted);">Hauteur</p>
+                                                <p id="panel-h" style="margin:0;font-weight:600;font-size:0.95rem;">—</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:0.8rem;">
+                                        <p style="font-size:0.72rem;color:var(--text-muted);margin:0 0 0.4rem;text-transform:uppercase;letter-spacing:.08em;">Image source</p>
+                                        <p id="panel-img-name" style="margin:0;font-size:0.8rem;font-family:monospace;color:var(--text-secondary);word-break:break-all;">—</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <script>
+                        // ── Slider Comparison Sync ──
+                        const container = document.getElementById('comparison-container');
+                        const wrapper = document.getElementById('annotated-slider-wrapper');
+                        const img = document.getElementById('annotated-slider-img');
+                        const range = document.getElementById('comparison-range-slider');
+                        const handle = document.getElementById('slider-split-handle');
+
+                        function syncWidth() {
+                            if (container && img) {
+                                img.style.width = container.offsetWidth + 'px';
+                            }
+                        }
+
+                        if (range && wrapper && handle) {
+                            range.addEventListener('input', (e) => {
+                                const val = e.target.value;
+                                wrapper.style.width = val + '%';
+                                handle.style.left = val + '%';
+                            });
+                            // Initial sync
+                            setTimeout(syncWidth, 200);
+                            window.addEventListener('resize', syncWidth);
+                        }
+
+                        function setViewMode(mode) {
+                            const sliderView = document.getElementById('view-slider');
+                            const sideView = document.getElementById('view-side-by-side');
+                            const btnSlider = document.getElementById('btn-view-slider');
+                            const btnSide = document.getElementById('btn-view-side');
+                            
+                            if (mode === 'slider') {
+                                sliderView.style.display = 'block';
+                                sideView.style.display = 'none';
+                                btnSlider.classList.add('active');
+                                btnSlider.style.background = 'var(--bg-surface)';
+                                btnSlider.style.color = 'var(--text-primary)';
+                                btnSide.classList.remove('active');
+                                btnSide.style.background = 'transparent';
+                                btnSide.style.color = 'var(--text-secondary)';
+                                setTimeout(syncWidth, 50);
+                            } else {
+                                sliderView.style.display = 'none';
+                                sideView.style.display = 'block';
+                                btnSide.classList.add('active');
+                                btnSide.style.background = 'var(--bg-surface)';
+                                btnSide.style.color = 'var(--text-primary)';
+                                btnSlider.classList.remove('active');
+                                btnSlider.style.background = 'transparent';
+                                btnSlider.style.color = 'var(--text-secondary)';
+                            }
+                        }
+
+                        // ── Dynamic Counts & Pills ──
                         document.addEventListener("DOMContentLoaded", () => {
-                            const viewer = document.querySelector('#hybrid3Dviewer');
                             const cards = document.querySelectorAll('.deg-card');
+                            const counts = {
+                                'fissures': 0,
+                                'humidite': 0,
+                                'effritement': 0
+                            };
+                            
+                            cards.forEach(card => {
+                                const type = card.dataset.type;
+                                if (type in counts) {
+                                    counts[type]++;
+                                }
+                            });
 
-                            cards.forEach((card, index) => {
-                                card.addEventListener('click', () => {
-                                    // Highlight active card
-                                    cards.forEach(c => c.style.border = '1px solid transparent');
-                                    card.style.border = '1px solid var(--accent)';
+                            // Update counters in UI
+                            Object.keys(counts).forEach(type => {
+                                // Summary counter card
+                                const counterEl = document.getElementById(`count-${type}`);
+                                if (counterEl) {
+                                    counterEl.textContent = counts[type];
+                                    if (counts[type] === 0) {
+                                        counterEl.closest('.path-summary-card').style.opacity = '0.4';
+                                    }
+                                }
+                                
+                                // Filter pill badge
+                                const pill = document.querySelector(`.filter-pill[data-type="${type}"]`);
+                                if (pill) {
+                                    const badge = pill.querySelector('.count-badge');
+                                    if (badge) {
+                                        badge.textContent = counts[type];
+                                    }
+                                    if (counts[type] === 0) {
+                                        pill.style.opacity = '0.5';
+                                    }
+                                }
+                            });
 
-                                    // Read simulated 3D coordinates from dataset (or AI model mappings)
-                                    const tx = card.dataset.x;
-                                    const ty = card.dataset.y;
-                                    const tz = card.dataset.z;
-
-                                    // Focus viewer
-                                    viewer.cameraTarget = `${tx}m ${ty}m ${tz}m`;
-
-                                    // Adjust orbit to zoom in
-                                    const theta = 45 + (index * 15);
-                                    viewer.cameraOrbit = `${theta}deg 60deg 50%`;
-                                });
+                            // ── Card click: highlight only ──
+                            cards.forEach(card => {
+                                // highlight handled via openDegModal()
                             });
                         });
-                    </script>
 
-                    <!-- RECOMMENDATIONS -->
+                        function filterDegradations(type) {
+                            const cards = document.querySelectorAll('.deg-card');
+                            const pills = document.querySelectorAll('.filter-pill');
+                            
+                            pills.forEach(pill => {
+                                if (pill.dataset.type === type) {
+                                    pill.classList.add('active');
+                                    pill.style.background = 'var(--accent)';
+                                    pill.style.borderColor = 'var(--accent)';
+                                    pill.style.color = '#fff';
+                                } else {
+                                    pill.classList.remove('active');
+                                    pill.style.background = 'transparent';
+                                    pill.style.borderColor = 'var(--border)';
+                                    pill.style.color = 'var(--text-secondary)';
+                                }
+                            });
+
+                            cards.forEach(card => {
+                                if (type === 'all' || card.dataset.type === type) {
+                                    card.style.display = 'block';
+                                } else {
+                                    card.style.display = 'none';
+                                }
+                            });
+                        }
+                        // ── Modal / Panel logic ──
+                        const TYPE_ICONS = {
+                            'fissures':    'ph-duotone ph-warning-octagon',
+                            'humidite':    'ph-duotone ph-drop',
+                            'effritement': 'ph-duotone ph-squares-four'
+                        };
+
+                        function openDegModal(card) {
+                            // Highlight selected card
+                            document.querySelectorAll('.deg-card').forEach(c => {
+                                c.style.background = 'var(--bg-card)';
+                                c.style.boxShadow = 'none';
+                                c.style.outline = 'none';
+                            });
+                            const color = card.dataset.color || '#ff6b6b';
+                            // Resolve CSS variables to actual hex values for canvas
+                            const resolvedColor = color === 'var(--accent)' ? '#6c63ff' :
+                                                  color === 'var(--accent-2)' ? '#00f5ff' : color;
+                            card.style.background = 'rgba(255,255,255,0.03)';
+                            card.style.outline = `2px solid ${resolvedColor}`;
+                            card.style.boxShadow = `0 0 20px ${resolvedColor}33`;
+
+                            // Populate info panel
+                            const dtype   = card.dataset.type || '?';
+                            const conf    = parseInt(card.dataset.confidence) || 0;
+                            const sev     = card.dataset.severity || '?';
+                            const bx      = parseInt(card.dataset.bboxX) || 0;
+                            const by      = parseInt(card.dataset.bboxY) || 0;
+                            const bw      = parseInt(card.dataset.bboxW) || 0;
+                            const bh      = parseInt(card.dataset.bboxH) || 0;
+                            const imgName = card.dataset.image || '';
+                            const folder  = card.dataset.projFolder || '';
+
+                            document.getElementById('panel-icon').innerHTML = `<i class="${TYPE_ICONS[dtype] || 'ph-duotone ph-question'}" style="color:${resolvedColor}"></i>`;
+                            document.getElementById('panel-type').textContent = dtype;
+                            document.getElementById('panel-type').style.color = resolvedColor;
+                            document.getElementById('panel-severity').textContent = 'Sévérité : ' + sev;
+                            document.getElementById('panel-conf').textContent = conf + '%';
+                            document.getElementById('panel-conf').style.color = resolvedColor;
+                            document.getElementById('panel-conf-bar').style.width = conf + '%';
+                            document.getElementById('panel-conf-bar').style.background = resolvedColor;
+                            document.getElementById('panel-x').textContent = bx + ' px';
+                            document.getElementById('panel-y').textContent = by + ' px';
+                            document.getElementById('panel-w').textContent = bw + ' px';
+                            document.getElementById('panel-h').textContent = bh + ' px';
+                            document.getElementById('panel-img-name').textContent = imgName;
+
+                            // Show panel and draw image+bbox on canvas
+                            const panel = document.getElementById('deg-preview-panel');
+                            panel.style.display = 'block';
+                            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                            const canvas = document.getElementById('deg-canvas');
+                            const loader = document.getElementById('canvas-loader');
+                            loader.style.display = 'flex';
+
+                            const imgSrc = '/static/uploads/' + folder + '/' + imgName;
+                            const image  = new Image();
+                            image.crossOrigin = 'anonymous';
+                            image.onload = () => {
+                                canvas.width  = image.naturalWidth;
+                                canvas.height = image.naturalHeight;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(image, 0, 0);
+
+                                if (bw > 0 && bh > 0) {
+                                    // Semi-transparent dimming outside bbox
+                                    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+                                    ctx.fillRect(0,   0,   canvas.width, by);                     // top
+                                    ctx.fillRect(0,   by+bh, canvas.width, canvas.height-by-bh); // bottom
+                                    ctx.fillRect(0,   by,   bx,  bh);                             // left
+                                    ctx.fillRect(bx+bw, by, canvas.width-bx-bw, bh);             // right
+
+                                    // Bounding box border — use resolvedColor (canvas can't use CSS vars)
+                                    ctx.strokeStyle = resolvedColor;
+                                    ctx.lineWidth   = Math.max(3, canvas.width * 0.004);
+                                    ctx.strokeRect(bx, by, bw, bh);
+
+                                    // Corner accents (bold L-shapes at each corner)
+                                    const cs = ctx.lineWidth * 5;
+                                    ctx.lineWidth *= 2.5;
+                                    [[bx,by],[bx+bw,by],[bx,by+bh],[bx+bw,by+bh]].forEach(([px,py]) => {
+                                        ctx.beginPath();
+                                        ctx.moveTo(px + (px===bx?0:-cs), py);
+                                        ctx.lineTo(px + (px===bx?cs:-cs), py);
+                                        ctx.moveTo(px, py + (py===by?0:-cs));
+                                        ctx.lineTo(px, py + (py===by?cs:-cs));
+                                        ctx.stroke();
+                                    });
+
+                                    // Label badge
+                                    const label = dtype.toUpperCase() + '  ' + conf + '%';
+                                    const fs = Math.max(14, canvas.width * 0.018);
+                                    ctx.font = `bold ${fs}px Inter, sans-serif`;
+                                    const tw = ctx.measureText(label).width;
+                                    const pad = fs * 0.5;
+                                    const lx = bx, ly = Math.max(0, by - fs - pad*2);
+                                    ctx.fillStyle = resolvedColor;
+                                    ctx.globalAlpha = 0.9;
+                                    ctx.beginPath();
+                                    ctx.roundRect(lx, ly, tw + pad*2, fs + pad*2, 6);
+                                    ctx.fill();
+                                    ctx.globalAlpha = 1;
+                                    ctx.fillStyle = '#ffffff';
+                                    ctx.fillText(label, lx + pad, ly + fs + pad * 0.8);
+                                }
+                                loader.style.display = 'none';
+                            };
+                            image.onerror = () => { loader.style.display = 'none'; };
+                            image.src = imgSrc;
+                        }
+
+                        function closeDegPanel() {
+                            document.getElementById('deg-preview-panel').style.display = 'none';
+                            document.querySelectorAll('.deg-card').forEach(c => {
+                                c.style.background = 'var(--bg-card)';
+                                c.style.boxShadow = 'none';
+                                c.style.outline = 'none';
+                            });
+                        }
+                    </script>
+                    <style>
+                        @keyframes spin { to { transform: rotate(360deg); } }
+                    </style>
 
                     <!-- ACTIONS -->
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
@@ -350,41 +778,42 @@
 
                 <!-- DEGRADATION TYPE GUIDE -->
                 <section style="margin-top:3rem;">
-                    <h3><i class="ph-duotone ph-books" style="margin-right:8px;"></i> Guide — Types de Dégradation</h3>
+                    <h3><i class="ph-duotone ph-books" style="margin-right:8px;"></i> Guide — Types de Dégradation &amp; Datasets</h3>
                     <div
-                        style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1rem;margin-top:1rem;">
-                        <div class="guide-card">
-                            <h4><i class="ph-duotone ph-asterisk" style="color:#ff6b6b;margin-right:6px;"></i>Fissures
-                            </h4>
-                            <p>Ruptures structurelles — Score impact : élevé</p>
+                        style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem;margin-top:1rem;">
+                        <div class="guide-card" style="padding:1.2rem; background:var(--bg-card); border-radius:14px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; justify-content:space-between; min-height:160px; transition: all 0.25s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.borderColor='rgba(255, 107, 107, 0.3)';" onmouseout="this.style.transform='none'; this.style.borderColor='rgba(255,255,255,0.04)';">
+                            <div>
+                                <h4 style="margin:0 0 0.5rem; display:flex; align-items:center; font-size:1.05rem; font-weight:600;"><i class="ph-duotone ph-warning-octagon" style="color:#ff6b6b;margin-right:8px;font-size:1.2rem;"></i>Fissures</h4>
+                                <p style="font-size:0.82rem; color:var(--text-secondary); margin:0 0 1rem; line-height:1.4;">Fissures structurelles ou de surface affectant la solidité du monument. Score d'impact : <strong>Élevé</strong>.</p>
+                            </div>
+                            <a href="https://www.kaggle.com/datasets/arunrk7/surface-crack-detection" target="_blank" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; font-size:0.78rem; padding:0.55rem 1rem; text-decoration:none; border-radius:8px; border:1px solid rgba(255,107,107,0.3); background:rgba(255,107,107,0.08); color:#ff6b6b; font-weight:700; transition:all 0.2s;" onmouseover="this.style.background='rgba(255,107,107,0.15)';" onmouseout="this.style.background='rgba(255,107,107,0.08)';">
+                                <i class="ph-bold ph-database"></i> Dataset d'Entraînement <i class="ph-bold ph-arrow-square-out" style="font-size:0.7rem;"></i>
+                            </a>
                         </div>
-                        <div class="guide-card">
-                            <h4><i class="ph-duotone ph-drop" style="color:var(--accent);margin-right:6px;"></i>Humidité
-                            </h4>
-                            <p>Infiltrations, efflorescences — Score impact : moyen</p>
+                        
+                        <div class="guide-card" style="padding:1.2rem; background:var(--bg-card); border-radius:14px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; justify-content:space-between; min-height:160px; transition: all 0.25s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.borderColor='rgba(99, 102, 241, 0.3)';" onmouseout="this.style.transform='none'; this.style.borderColor='rgba(255,255,255,0.04)';">
+                            <div>
+                                <h4 style="margin:0 0 0.5rem; display:flex; align-items:center; font-size:1.05rem; font-weight:600;"><i class="ph-duotone ph-drop" style="color:var(--accent);margin-right:8px;font-size:1.2rem;"></i>Humidité</h4>
+                                <p style="font-size:0.82rem; color:var(--text-secondary); margin:0 0 1rem; line-height:1.4;">Infiltrations, humidité capillaire, moisissures et lichens. Score d'impact : <strong>Moyen à Élevé</strong>.</p>
+                            </div>
+                            <a href="https://www.kaggle.com/datasets/stmlen/concrete-structural-defect-imaging-dataset" target="_blank" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; font-size:0.78rem; padding:0.55rem 1rem; text-decoration:none; border-radius:8px; border:1px solid rgba(99, 102, 241, 0.3); background:rgba(99, 102, 241, 0.08); color:var(--accent); font-weight:700; transition:all 0.2s;" onmouseover="this.style.background='rgba(99, 102, 241, 0.15)';" onmouseout="this.style.background='rgba(99, 102, 241, 0.08)';">
+                                <i class="ph-bold ph-database"></i> Dataset d'Entraînement <i class="ph-bold ph-arrow-square-out" style="font-size:0.7rem;"></i>
+                            </a>
                         </div>
-                        <div class="guide-card">
-                            <h4><i class="ph-duotone ph-wind"
-                                    style="color:var(--accent-2);margin-right:6px;"></i>Érosion</h4>
-                            <p>Usure surface — Score impact : moyen</p>
-                        </div>
-                        <div class="guide-card">
-                            <h4><i class="ph-duotone ph-plant" style="color:#06d6a0;margin-right:6px;"></i>Champignons
-                            </h4>
-                            <p>Croissance biologique — Score impact : élevé</p>
-                        </div>
-                        <div class="guide-card">
-                            <h4><i class="ph-duotone ph-palette"
-                                    style="color:#ffd166;margin-right:6px;"></i>Décoloration</h4>
-                            <p>Altération aspectuelle — Score impact : faible</p>
-                        </div>
-                        <div class="guide-card">
-                            <h4><i class="ph-duotone ph-grains" style="color:#ffa36c;margin-right:6px;"></i>Effritement
-                            </h4>
-                            <p>Perte cohésion — Score impact : moyen</p>
+                        
+                        <div class="guide-card" style="padding:1.2rem; background:var(--bg-card); border-radius:14px; border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; justify-content:space-between; min-height:160px; transition: all 0.25s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.borderColor='rgba(255, 163, 108, 0.3)';" onmouseout="this.style.transform='none'; this.style.borderColor='rgba(255,255,255,0.04)';">
+                            <div>
+                                <h4 style="margin:0 0 0.5rem; display:flex; align-items:center; font-size:1.05rem; font-weight:600;"><i class="ph-duotone ph-squares-four" style="color:#ffa36c;margin-right:8px;font-size:1.2rem;"></i>Effritement</h4>
+                                <p style="font-size:0.82rem; color:var(--text-secondary); margin:0 0 1rem; line-height:1.4;">Perte de cohésion de la pierre, effritement, érosion et spalling. Score d'impact : <strong>Moyen</strong>.</p>
+                            </div>
+                            <a href="https://www.kaggle.com/datasets/vahidkhalili/deterioration-detection-in-historical-buildings" target="_blank" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; font-size:0.78rem; padding:0.55rem 1rem; text-decoration:none; border-radius:8px; border:1px solid rgba(255, 163, 108, 0.3); background:rgba(255, 163, 108, 0.08); color:#ffa36c; font-weight:700; transition:all 0.2s;" onmouseover="this.style.background='rgba(255, 163, 108, 0.15)';" onmouseout="this.style.background='rgba(255, 163, 108, 0.08)';">
+                                <i class="ph-bold ph-database"></i> Dataset d'Entraînement <i class="ph-bold ph-arrow-square-out" style="font-size:0.7rem;"></i>
+                            </a>
                         </div>
                     </div>
                 </section>
+
+
             </main>
             <footer class="footer">
                 <div class="footer-content">
@@ -396,3 +825,4 @@
 </body>
 
 </html>
+

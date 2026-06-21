@@ -25,7 +25,7 @@ def generate_report(output_path: str, engineer_name: str, project, analysis, pla
     photo_path   = None
     if os.path.exists(folder):
         for fname in os.listdir(folder):
-            if fname.lower().endswith(('.jpg', '.jpeg', '.png')):
+            if fname.lower().endswith(('.jpg', '.jpeg', '.png', '.jfif')):
                 photo_path = os.path.join(folder, fname)
                 break
 
@@ -203,17 +203,19 @@ def generate_report(output_path: str, engineer_name: str, project, analysis, pla
         pdf.set_xy(pdf.l_margin + 5, pdf.get_y() + 4)
         pdf.set_font('Arial', 'B', 10)
         pdf.set_text_color(*BRAND_NAVY)
-        pdf.cell(100, 5, f" PROJET : {impact['project'].upper()}")
+        pdf.cell(100, 5, f" PROJET : {str(impact.get('project', 'N/A')).upper()}")
         
         pdf.set_x(pdf.l_margin + 120)
         pdf.set_font('Arial', 'B', 9)
-        pdf.set_text_color(*impact['risk_color'])
-        pdf.cell(45, 5, f"RISQUE : {impact['risk_level']}", align='R', ln=1)
+        impact_risk_color = impact.get('risk_color', (217, 119, 6))
+        pdf.set_text_color(*impact_risk_color)
+        pdf.cell(45, 5, f"RISQUE : {impact.get('risk_level', 'N/A')}", align='R', ln=1)
         
         pdf.set_x(pdf.l_margin + 5)
         pdf.set_font('Arial', 'I', 8)
         pdf.set_text_color(*BRAND_GRAY)
-        pdf.cell(0, 5, f"Description : {impact['description'][:80]}..." if len(impact['description']) > 80 else f"Description : {impact['description']}")
+        desc = impact.get('description', '')
+        pdf.cell(0, 5, f"Description : {desc[:80]}..." if len(desc) > 80 else f"Description : {desc}")
         pdf.ln(12)
 
         # Concerns
@@ -222,7 +224,7 @@ def generate_report(output_path: str, engineer_name: str, project, analysis, pla
         pdf.cell(0, 8, 'Points de Vigilance Majeurs', ln=1)
         pdf.set_font('Arial', '', 9)
         pdf.set_text_color(*TEXT_MAIN)
-        for concern in impact['main_concerns']:
+        for concern in impact.get('main_concerns', []):
             pdf.set_x(pdf.l_margin + 5)
             pdf.cell(5, 6, "-", ln=0)
             pdf.multi_cell(160, 6, concern)
@@ -234,7 +236,7 @@ def generate_report(output_path: str, engineer_name: str, project, analysis, pla
         pdf.cell(0, 8, 'Conseils Techniques aux Ingénieurs', ln=1)
         pdf.set_font('Arial', '', 9)
         pdf.set_text_color(*TEXT_MAIN)
-        for advice in impact['engineering_advice']:
+        for advice in impact.get('engineering_advice', []):
             pdf.set_x(pdf.l_margin + 5)
             pdf.set_text_color(*BRAND_ACCENT)
             pdf.cell(5, 6, chr(187), ln=0)

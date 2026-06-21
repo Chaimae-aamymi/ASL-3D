@@ -85,24 +85,23 @@ class ASL3DViewer {
         loader.load(this.modelUrl, (gltf) => {
             this.model = gltf.scene;
             
-            // Auto-center and Scale
             const box = new THREE.Box3().setFromObject(this.model);
-            const size = box.getSize(new THREE.Vector3()).length();
+            const sizeVec = box.getSize(new THREE.Vector3());
+            const size = Math.max(sizeVec.length(), 0.001);
             const center = box.getCenter(new THREE.Vector3());
 
-            this.model.position.x += (this.model.position.x - center.x);
-            this.model.position.y += (this.model.position.y - center.y);
-            this.model.position.z += (this.model.position.z - center.z);
-            
-            this.controls.maxDistance = size * 10;
-            this.camera.near = size / 100;
-            this.camera.far = size * 100;
+            this.model.position.sub(center);
+
+            const dist = size * 1.2;
+            this.controls.maxDistance = size * 8;
+            this.controls.minDistance = size * 0.05;
+            this.camera.near = size / 200;
+            this.camera.far = size * 200;
             this.camera.updateProjectionMatrix();
-            this.camera.position.copy(center);
-            this.camera.position.x += size / 2.0;
-            this.camera.position.y += size / 5.0;
-            this.camera.position.z += size / 2.0;
-            this.camera.lookAt(center);
+            this.camera.position.set(dist * 0.6, dist * 0.35, dist * 0.8);
+            this.camera.lookAt(0, 0, 0);
+            this.controls.target.set(0, 0, 0);
+            this.controls.update();
 
             this.model.traverse((node) => {
                 if (node.isMesh) {

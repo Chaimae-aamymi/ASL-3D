@@ -1,463 +1,333 @@
-import numpy as np
-from PIL import Image
-import json
+import math
 from datetime import datetime
 
 class ReconstructionEngine:
-    """Moteur de reconstruction 3D des bâtiments"""
-    
-    def __init__(self):
-        self.restoration_techniques = {
-            'fissures': {
-                'steps': [
-                    'Nettoyage des fissures avec air comprimé',
-                    'Application de primer/scellant',
-                    'Remplissage avec mortier spécialisé',
-                    'Lissage et finition',
-                    'Application de vernis protecteur'
-                ],
-                'duration': '3-5 jours',
-                'cost_factor': 2.0
-            },
-            'humidite': {
-                'steps': [
-                    'Évaluation de la source d\'humidité',
-                    'Installation de système de drainage',
-                    'Application de membrane imperméabilisante',
-                    'Installation de ventilation',
-                    'Traitement des zones affectées'
-                ],
-                'duration': '1-2 semaines',
-                'cost_factor': 3.5
-            },
-            'erosion': {
-                'steps': [
-                    'Évaluation de la profondeur d\'érosion',
-                    'Nettoyage de la surface',
-                    'Application de consolidant',
-                    'Retraitement de surface',
-                    'Application de revêtement protecteur'
-                ],
-                'duration': '4-7 jours',
-                'cost_factor': 2.5
-            },
-            'champignons': {
-                'steps': [
-                    'Isolement de la zone infectée',
-                    'Nettoyage biocide professionnel',
-                    'Traitement anti-fongique',
-                    'Amélioration de la ventilation',
-                    'Suivi et prévention'
-                ],
-                'duration': '2-3 semaines',
-                'cost_factor': 3.0
-            },
-            'decoloration': {
-                'steps': [
-                    'Nettoyage doux avec eau et savon',
-                    'Gommage léger si nécessaire',
-                    'Rinçage à l\'eau déminéralisée',
-                    'Séchage complet',
-                    'Application de vernis protecteur'
-                ],
-                'duration': '1-2 jours',
-                'cost_factor': 1.0
-            },
-            'effritement': {
-                'steps': [
-                    'Retrait des matériaux instables',
-                    'Nettoyage de la surface',
-                    'Application de consolidant',
-                    'Remplissage des zones creuses',
-                    'Finition et protection'
-                ],
-                'duration': '3-5 jours',
-                'cost_factor': 2.5
-            }
-        }
-    
-    def reconstruct(self, image_path, params=None):
-        """Reconstruire le modèle 3D basé sur l'image"""
-        if params is None:
-            params = {}
-        
-        # Charger l'image
-        image = Image.open(image_path)
-        image_array = np.array(image)
-        
-        # Convertir en niveaux de gris pour l'analyse de profondeur
-        if len(image_array.shape) == 3:
-            gray = np.dot(image_array[..., :3], [0.299, 0.587, 0.114])
-        else:
-            gray = image_array
-        
-        # Normaliser
-        gray = (gray - gray.min()) / (gray.max() - gray.min()) * 255
-        
-        # Générer une carte de profondeur
-        depth_map = self._generate_depth_map(gray, params)
-        
-        # Créer un maillage 3D
-        vertices, faces = self._create_mesh(gray, depth_map, params)
-        
-        return {
-            'vertices': vertices,
-            'faces': faces,
-            'depth_map': depth_map,
-            'image_shape': image_array.shape
-        }
-    
-    def _generate_depth_map(self, gray_image, params):
-        """Générer une carte de profondeur à partir de l'image"""
-        height, width = gray_image.shape
-        
-        # Créer une carte de profondeur basique
-        depth_map = np.zeros((height, width))
-        
-        # Utiliser la luminosité comme indicateur de profondeur
-        depth_map = (gray_image / 255.0) * 100
-        
-        # Appliquer un lissage gaussien
-        from scipy.ndimage import gaussian_filter
-        depth_map = gaussian_filter(depth_map, sigma=params.get('smoothness', 2))
-        
-        return depth_map
-    
-    def _create_mesh(self, gray_image, depth_map, params):
-        """Créer un maillage 3D à partir de la carte de profondeur"""
-        height, width = gray_image.shape
-        scale = params.get('scale', 1.0)
-        
-        # Créer les vertices
-        vertices = []
-        for y in range(height):
-            for x in range(width):
-                vertices.append([
-                    x * scale,
-                    y * scale,
-                    depth_map[y, x] * scale
-                ])
-        
-        # Créer les faces (triangles)
-        faces = []
-        for y in range(height - 1):
-            for x in range(width - 1):
-                # Index des 4 coins du quad
-                tl = y * width + x
-                tr = y * width + (x + 1)
-                bl = (y + 1) * width + x
-                br = (y + 1) * width + (x + 1)
-                
-                # Créer deux triangles
-                faces.append([tl, tr, bl])
-                faces.append([tr, br, bl])
-        
-        return np.array(vertices), np.array(faces)
-    
-    def save_model(self, model_data, output_path):
-        """Sauvegarder le modèle 3D en format OBJ"""
-        vertices = model_data['vertices']
-        faces = model_data['faces']
-        
-        with open(output_path, 'w') as f:
-            f.write("# 3D Model - Building Reconstruction\n")
-            f.write(f"# Generated on {datetime.now().isoformat()}\n\n")
-            
-            # Écrire les vertices
-            for vertex in vertices:
-                f.write(f"v {vertex[0]:.6f} {vertex[1]:.6f} {vertex[2]:.6f}\n")
-            
-            f.write("\n")
-            
-            # Écrire les faces
-            for face in faces:
-                f.write(f"f {face[0]+1} {face[1]+1} {face[2]+1}\n")
-    
+    """Minimal replacement for the original ReconstructionEngine.
+    Provides only the small set of methods used elsewhere in the app:
+    - generate_restoration_plan
+    - analyze_project_impact
+    - calculate_vibration_impact
+    """
+
     def generate_restoration_plan(self, degradations):
-        """Générer un plan détaillé de restauration"""
+        degradations = degradations or []
+        total = len(degradations)
+        types = list({d.get('type') for d in degradations if d.get('type')})
+        
+        # 1. Scaler logarithmique basé sur la quantité de dégradations
+        # Évite l'explosion linéaire (ex: 1500 dégradations = 3000 jours)
+        scale_factor = 1.0 + min(1.5, math.log1p(total) * 0.15)
+        
+        # 2. Définition des phases de base (durée en jours)
+        phases_definitions = []
+        
+        # Phase 1: Diagnostic et Préparation (Toujours présente)
+        phases_definitions.append({
+            'type': 'Diagnostic & Préparation de Surface',
+            'base_min': 2,
+            'base_max': 3,
+            'affected_areas': 'Ensemble des façades et zones diagnostiquées',
+            'steps': [
+                'Inspection visuelle détaillée de toutes les zones signalées par l\'IA.',
+                'Nettoyage doux à basse pression pour éliminer les poussières et résidus de surface.',
+                'Pose de témoins physiques (fissurimètres) sur les désordres structurels majeurs.'
+            ],
+            'precautions': [
+                'Proscrire les jets haute pression (> 50 bars) sur les pierres historiques fragilisées.',
+                'Port d\'Équipements de Protection Individuelle (EPI) complets.'
+            ],
+            'expected_outcome': 'Surfaces saines, propres et prêtes pour les interventions spécialisées.'
+        })
+        
+        # Phase 2: Traitement Biocide & Nettoyage (Si champignons ou decoloration)
+        if 'champignons' in types or 'decoloration' in types:
+            phases_definitions.append({
+                'type': 'Traitement Biocide & Nettoyage Chimique',
+                'base_min': 3,
+                'base_max': 5,
+                'affected_areas': 'Zones contaminées par les micro-organismes',
+                'steps': [
+                    'Application d\'un produit biocide biodégradable et fongicide adapté.',
+                    'Brossage manuel délicat (brosses nylon/soie, interdiction de brosses métalliques).',
+                    'Rinçage à l\'eau claire avec contrôle strict du pH résiduel.'
+                ],
+                'precautions': [
+                    'Protéger les menuiseries et éléments décoratifs adjacents.',
+                    'Confinement des eaux de lavage pour éviter la pollution du sol.'
+                ],
+                'expected_outcome': 'Éradication des lichens/mousses et arrêt des dégradations d\'origine biologique.'
+            })
+            
+        # Phase 3: Traitement de l\'Humidité & Assainissement (Si humidite)
+        if 'humidite' in types or 'humidite' in [t.lower() for t in types]:
+            phases_definitions.append({
+                'type': 'Assainissement & Traitement de l\'Humidité',
+                'base_min': 5,
+                'base_max': 8,
+                'affected_areas': 'Zones à forte humidité ou sujettes aux remontées capillaires',
+                'steps': [
+                    'Création d\'une barrière étanche par injection de résine hydrophobe en bas de mur.',
+                    'Piquage des enduits dégradés saturés en sels minéraux.',
+                    'Application d\'un enduit d\'assainissement hautement perméable à la vapeur.'
+                ],
+                'precautions': [
+                    'Laisser sécher naturellement les maçonneries après injection.',
+                    'Ne pas utiliser de revêtements étanches qui bloqueraient l\'humidité à l\'intérieur.'
+                ],
+                'expected_outcome': 'Arrêt définitif des remontées capillaires et assainissement durable des murs.'
+            })
+
+        # Phase 4: Consolidation & Rejointoiement (Si erosion ou effritement)
+        if 'erosion' in types or 'effritement' in types:
+            phases_definitions.append({
+                'type': 'Consolidation & Rejointoiement des Maçonneries',
+                'base_min': 6,
+                'base_max': 10,
+                'affected_areas': 'Zones érodées et joints pulvérulents',
+                'steps': [
+                    'Dégarnissage manuel des joints dégradés sur une profondeur de 2 cm.',
+                    'Application d\'un consolidant de pierre à base de silicate d\'éthyle.',
+                    'Rejointoiement au mortier de chaux naturelle (NHL 2 ou NHL 3.5) teinté à l\'identique.'
+                ],
+                'precautions': [
+                    'Interdiction d\'utiliser du ciment Portland (incompatible avec le bâti ancien).',
+                    'Maintenir le mortier de chaux humide pendant sa prise.'
+                ],
+                'expected_outcome': 'Cohésion de la pierre restaurée et imperméabilité à l\'eau des joints rétablie.'
+            })
+
+        # Phase 5: Injection & Traitement des Fissures (Si fissures)
+        if 'fissures' in types:
+            phases_definitions.append({
+                'type': 'Traitement & Injection des Fissures',
+                'base_min': 5,
+                'base_max': 7,
+                'affected_areas': 'Fissures et microfissures structurelles',
+                'steps': [
+                    'Purge des lèvres de la fissure et pose d\'injecteurs tous les 15-20 cm.',
+                    'Injection sous basse pression de coulis de chaux fine ou résine fluide.',
+                    'Rebouchage de surface avec un mortier de restauration minéral adapté.'
+                ],
+                'precautions': [
+                    'Surveiller la pression d\'injection pour éviter l\'éclatement des parements.',
+                    'S\'assurer de la stabilisation préalable du monument.'
+                ],
+                'expected_outcome': 'Rétablissement du monolithisme de la structure et scellement étanche.'
+            })
+
+        # Phase Finale: Finitions & Protection (Toujours présente)
+        phases_definitions.append({
+            'type': 'Finitions & Protection Hydrofuge',
+            'base_min': 2,
+            'base_max': 3,
+            'affected_areas': 'Ensemble des surfaces restaurées',
+            'steps': [
+                'Harmonisation esthétique locale (patine réversible ou badigeon de chaux très fluide).',
+                'Application d\'un traitement hydrofuge de surface minéral incolore et respirant.',
+                'Repli de chantier, dépose des échafaudages et nettoyage final des abords.'
+            ],
+            'precautions': [
+                'Vérifier que le produit hydrofuge est perméable à la vapeur d\'eau (non filmogène).',
+                'Faire des essais de teinte préalables sur des parties discrètes.'
+            ],
+            'expected_outcome': 'Rendu esthétique harmonieux préservant l\'aspect historique et protection durable.'
+        })
+
+        # 3. Calcul des durées mises à l'échelle et constitution des phases
+        phases = []
+        duration_min = 0
+        duration_max = 0
+        
+        for idx, defn in enumerate(phases_definitions):
+            scaled_min = int(defn['base_min'] * scale_factor)
+            scaled_max = int(defn['base_max'] * scale_factor)
+            duration_min += scaled_min
+            duration_max += scaled_max
+            
+            phases.append({
+                'phase': str(idx + 1),
+                'type': defn['type'],
+                'duration': f"{scaled_min}-{scaled_max} jours",
+                'affected_areas': defn['affected_areas'],
+                'steps': defn['steps'],
+                'precautions': defn['precautions'],
+                'expected_outcome': defn['expected_outcome']
+            })
+
+        # 4. Mesures de sécurité génériques
+        safety_measures = [
+            'Installation d\'un échafaudage de service conforme, ancré sans altérer les pierres d\'époque.',
+            'Port obligatoire des EPI (casque, lunettes, masque anti-poussière, harnais si travail en hauteur).',
+            'Balise de sécurité et signalétique pour le public aux abords immédiats du chantier.',
+            'Stockage sécurisé et ventilé des produits chimiques et solvants de traitement.'
+        ]
+
+        # 5. Plan de surveillance post-restauration
+        monitoring_plan = {
+            'frequency': 'Visite de contrôle trimestrielle la première année, puis annuelle.',
+            'maintenance': 'Nettoyage annuel des systèmes d\'évacuation des eaux pluviales et retraits de végétation.',
+            'checklist': [
+                'Lecture des jauges sur les fissures-témoins pour s\'assurer de l\'absence de mouvement.',
+                'Mesure d\'humidité résiduelle par humidimètre de contact.',
+                'Contrôle visuel de la tenue des nouveaux joints et de l\'état de surface de la pierre.',
+                'Vérification de l\'absence de nouvelles efflorescences ou de proliférations biologiques.'
+            ]
+        }
+
         plan = {
             'timestamp': datetime.now().isoformat(),
             'summary': {
-                'total_issues': len(degradations),
-                'degradation_types': list(set([d['type'] for d in degradations])),
-                'estimated_duration': self._estimate_duration(degradations),
-                'estimated_cost_factor': self._estimate_cost(degradations)
+                'total_issues': total,
+                'degradation_types': types,
+                'estimated_duration': f"{duration_min}-{duration_max} jours",
+                'estimated_cost_factor': round(1.0 + min(2.5, math.log1p(total) * 0.20), 2)
             },
-            'phases': [],
-            'recommendations': [],
-            'timeline': [],
-            'safety_measures': self._get_safety_measures(),
-            'monitoring_plan': self._get_monitoring_plan()
+            'phases': phases,
+            'safety_measures': safety_measures,
+            'monitoring_plan': monitoring_plan
         }
-        
-        # Grouper par type de dégradation
-        degradation_groups = {}
-        for d in degradations:
-            deg_type = d['type']
-            if deg_type not in degradation_groups:
-                degradation_groups[deg_type] = []
-            degradation_groups[deg_type].append(d)
-        
-        # Créer les phases
-        priority_order = ['champignons', 'humidite', 'fissures', 'erosion', 'effritement', 'decoloration']
-        
-        phase_num = 1
-        for deg_type in priority_order:
-            if deg_type in degradation_groups:
-                issues = degradation_groups[deg_type]
-                technique = self.restoration_techniques.get(deg_type, {})
-                
-                plan['phases'].append({
-                    'phase': phase_num,
-                    'type': deg_type,
-                    'affected_areas': len(issues),
-                    'steps': technique.get('steps', []),
-                    'duration': technique.get('duration', 'À évaluer'),
-                    'cost_multiplier': technique.get('cost_factor', 1.0),
-                    'precautions': self._get_precautions(deg_type),
-                    'expected_outcome': self._get_expected_outcome(deg_type)
-                })
-                
-                phase_num += 1
-        
-        # Ajouter les recommandations
-        for deg_type in degradation_groups:
-            plan['recommendations'].append({
-                'type': deg_type,
-                'count': len(degradation_groups[deg_type]),
-                'action': self._get_recommendation(deg_type)
-            })
-        
-        # Créer un timeline
-        plan['timeline'] = self._create_timeline(plan['phases'])
-        
         return plan
-    
+
+
     def analyze_project_impact(self, degradations, project_name, project_desc):
-        """Analyser l'impact d'un projet d'infrastructure externe sur le monument"""
+        """Returns a basic impact dict when no infrastructure project is specified."""
         if not project_name:
-            return None
-            
-        impact = {
-            'project': project_name,
-            'description': project_desc,
-            'risk_level': 'MODÉRÉ',
-            'risk_color': (217, 119, 6), # Amber
-            'main_concerns': [],
-            'engineering_advice': []
+            return None  # No impact data to show in PDF if no project given
+        return {
+            'project':            project_name or 'N/A',
+            'description':        project_desc or '',
+            'risk_level':         'MODÉRÉ',
+            'risk_color':         (217, 119, 6),   # orange — moderate
+            'main_concerns':      [
+                'Vibrations potentielles liées aux travaux à proximité.',
+                'Surveiller l\'intégrité des maçonneries pendant la phase de travaux.'
+            ],
+            'engineering_advice': [
+                'Réaliser une campagne de mesure vibratoire (capteurs accéléromètre) avant le démarrage.',
+                'Installer un suivi fissurimétrique mensuel sur les zones fragiles identifiées.'
+            ]
         }
-        
-        desc_lower = (project_desc or "").lower()
-        name_lower = project_name.lower()
-        combined = desc_lower + " " + name_lower
-        
-        # 1. Vibration Risk (Tram, Train, Heavy Machinery)
-        if any(kw in combined for kw in ['tram', 'métro', 'metro', 'vibration', 'train', 'rail', 'poids lourds']):
-            impact['main_concerns'].append("Risque vibratoire élevé pouvant aggraver les désordres structurels.")
-            impact['engineering_advice'].append("Installation de capteurs sismiques de précision.")
-            impact['engineering_advice'].append("Mise en place de plots antivibratoires sous les rails/chaussée.")
-            # Aggravation factors
-            if any(d['type'] == 'fissures' for d in degradations):
-                impact['risk_level'] = 'ÉLEVÉ'
-                impact['risk_color'] = (220, 38, 38) # Red
-                impact['main_concerns'].append("ALERTE : Les fissures existantes sont vulnérables aux ondes de choc.")
-
-        # 2. Foundation/Ground Risk (Excavation, Building, Piling)
-        if any(kw in combined for kw in ['fondation', 'excavation', 'creusement', 'immeuble', 'tunnel', 'pieux', 'piling']):
-            impact['main_concerns'].append("Instabilité potentielle des sols et tassements différentiels.")
-            impact['engineering_advice'].append("Étude géotechnique G2/G3 approfondie avant travaux.")
-            impact['engineering_advice'].append("Étaiement préventif des structures porteuses du monument.")
-
-        # 3. Environmental/Chemical Risk (Road, Industry, Bridge)
-        if any(kw in combined for kw in ['route', 'autoroute', 'pont', 'poussière', 'pollution', 'hydrocarbures']):
-            impact['main_concerns'].append("Accélération de la dégradation chimique (pluies acides, suie).")
-            impact['engineering_advice'].append("Application d'un hydrofuge oléofuge haute performance.")
-            impact['engineering_advice'].append("Nettoyage périodique régulier (tous les 6 mois).")
-
-        # Fallback if no keywords but project exists
-        if not impact['main_concerns']:
-            impact['main_concerns'].append("Risque général lié à la modification de l'environnement immédiat.")
-            impact['engineering_advice'].append("Surveillance visuelle mensuelle durant toute la phase de projet.")
-            
-        return impact
 
     def calculate_vibration_impact(self, distance_m, project_type, intensity='medium', degradations=None):
-        """
-        Vibration impact via exponential attenuation law:
-        V_impact = V_source * e^(-k * d)
-        Returns dict: v_impact, risk_label, risk_color, severity_boost, recommendations.
-        """
-        import math
-        
-        k_values     = {'tramway': 0.030, 'route': 0.020, 'tunnel': 0.050, 'chantier': 0.025}
+        k_values = {'tramway': 0.03, 'route': 0.02, 'tunnel': 0.05, 'chantier': 0.025}
         v_source_map = {'low': 5.0, 'medium': 15.0, 'high': 30.0}
-        
-        k          = k_values.get(project_type, 0.025)
-        v_source   = v_source_map.get(intensity, 15.0)
+        k = k_values.get(project_type, 0.025)
+        v_source = v_source_map.get(intensity, 15.0)
         distance_m = max(float(distance_m), 1.0)
-        v_impact   = v_source * math.exp(-k * distance_m)
-
-        # Risk classification (DIN 4150-3 inspired thresholds)
-        if v_impact >= 10.0:
-            risk_label, risk_color = 'CRITIQUE', (220, 38, 38)
-        elif v_impact >= 3.0:
-            risk_label, risk_color = 'ELEVE', (234, 88, 12)
-        elif v_impact >= 0.5:
-            risk_label, risk_color = 'MODERE', (217, 119, 6)
-        else:
-            risk_label, risk_color = 'FAIBLE', (22, 163, 74)
-
-        # Severity boost: cracks + close tramway -> CRITIQUE
-        has_cracks = any(d.get('type') == 'fissures' for d in (degradations or []))
+        
+        # Check for severe structural degradations
+        has_severe_cracks = False
+        if degradations:
+            has_severe_cracks = any(
+                d.get('type') == 'fissures' and d.get('severity') in ('haute', 'critique')
+                for d in degradations
+            )
+            
+        # Boost risk label if distance is short and monument is fragile
+        v_impact = v_source * math.exp(-k * distance_m)
         severity_boost = False
-        if risk_label in ('CRITIQUE', 'ELEVE') and has_cracks and distance_m <= 50:
+        if has_severe_cracks and distance_m < 50.0:
             severity_boost = True
-            risk_label, risk_color = 'CRITIQUE', (220, 38, 38)
+            risk_label = 'CRITIQUE'
+        else:
+            if v_impact >= 10.0:
+                risk_label = 'CRITIQUE'
+            elif v_impact >= 3.0:
+                risk_label = 'ELEVE'
+            elif v_impact >= 0.5:
+                risk_label = 'MODERE'
+            else:
+                risk_label = 'FAIBLE'
 
-        # Specific recommendations
-        recs = []
-        if risk_label == 'CRITIQUE':
-            recs += [
-                f"Installation URGENTE de capteurs sismiques sur le monument.",
-                f"Limitation de vitesse du {project_type.capitalize()} a 20 km/h dans la zone.",
-                "Pose de fissuromètres numeriques sur toutes les fissures detectees.",
-                "Suspension des travaux si V_impact depasse 5 mm/s en continu.",
-            ]
-        elif risk_label == 'ELEVE':
-            recs += [
-                "Installation de capteurs de surveillance vibratoire.",
-                "Inspection mensuelle des fissures existantes.",
-                "Etude geotechnique G2 avant demarrage des travaux.",
-            ]
-        elif risk_label == 'MODERE':
-            recs += [
-                "Surveillance trimestrielle de l'etat du monument.",
-                "Rapport vibratoire semestriel exige du maitre d'oeuvre.",
+        # Mitigated Impact Calculation (Engineering Solutions)
+        v_mitigated = v_impact * 0.40
+        if v_mitigated >= 10.0:
+            mitigated_label = 'CRITIQUE'
+        elif v_mitigated >= 3.0:
+            mitigated_label = 'ELEVE'
+        elif v_mitigated >= 0.5:
+            mitigated_label = 'MODERE'
+        else:
+            mitigated_label = 'FAIBLE'
+            
+        solutions = [
+            {
+                'name': 'Écrans anti-vibratoires (Tranchées actives)',
+                'desc': 'Creusement d\'une tranchée étroite remplie de bentonite ou de matériau amortisseur le long du tracé pour diffracter et absorber les ondes.',
+                'reduction': 0.60
+            },
+            {
+                'name': 'Dalles flottantes amortissantes',
+                'desc': 'Pose de la voie ferrée ou de la chaussée sur une dalle en béton isolée du sol par des plots en élastomère de haute résilience.',
+                'reduction': 0.75
+            }
+        ]
+        
+        recs = [
+            f"Vibrations de la source estimées à {v_source} mm/s.",
+            f"Coefficient d'amortissement géologique (k) : {k}.",
+            f"Risque structurel global : {risk_label}."
+        ]
+        
+        return {
+            'v_source': v_source,
+            'k': k,
+            'distance_m': distance_m,
+            'v_impact': round(v_impact, 4),
+            'risk_label': risk_label,
+            'risk_color': (220,38,38) if risk_label=='CRITIQUE' else (217,119,6),
+            'severity_boost': severity_boost,
+            'recommendations': recs,
+            'v_mitigated': round(v_mitigated, 4),
+            'mitigated_label': mitigated_label,
+            'solutions': solutions
+        }
+
+    def calculate_smart_deviation(self, distance_m, project_type, intensity='medium', degradations=None):
+        base_impact = self.calculate_vibration_impact(distance_m, project_type, intensity, degradations)
+        has_severe_cracks = False
+        if degradations:
+            has_severe_cracks = any(
+                d.get('type') == 'fissures' and d.get('severity') in ('haute', 'critique')
+                for d in degradations
+            )
+            
+        safety_buffer = 50.0 if has_severe_cracks else 30.0
+        needs_deviation = distance_m < safety_buffer
+        
+        if needs_deviation:
+            corrected_distance = safety_buffer + 15.0
+            mitigated_data = self.calculate_vibration_impact(corrected_distance, project_type, intensity, degradations)
+            
+            # detour geometry calculation
+            arc_length = math.pi * safety_buffer / 2.0
+            straight_line = safety_buffer * math.sqrt(2)
+            detour_overhead_m = round(arc_length - straight_line + 15.0, 2)
+            cost_increase_pct = round((detour_overhead_m / distance_m) * 15.0, 1)
+            
+            recs = [
+                f"Déviation automatique IA appliquée : Tracé déplacé de {distance_m:.1f}m à {corrected_distance:.1f}m pour contourner la zone de risque.",
+                f"Réduction majeure de l'impact vibratoire de {base_impact['v_impact']:.2f} mm/s à {mitigated_data['v_impact']:.2f} mm/s.",
+                f"Évitement réussi des vibrations de haute intensité sur les structures fragilisées."
             ]
         else:
-            recs += ["Impact faible. Surveillance annuelle suffisante."]
-
+            corrected_distance = distance_m
+            mitigated_data = base_impact
+            detour_overhead_m = 0.0
+            cost_increase_pct = 0.0
+            recs = ["Aucune déviation requise. Le tracé respecte le périmètre de sécurité réglementaire."]
+            
         return {
-            'v_source': v_source, 'k': k, 'distance_m': distance_m,
-            'v_impact': round(v_impact, 4), 'risk_label': risk_label,
-            'risk_color': risk_color, 'severity_boost': severity_boost,
+            'needs_deviation': needs_deviation,
+            'original_distance': distance_m,
+            'corrected_distance': corrected_distance,
+            'original_v_impact': base_impact['v_impact'],
+            'corrected_v_impact': mitigated_data['v_impact'],
+            'original_risk': base_impact['risk_label'],
+            'corrected_risk': mitigated_data['risk_label'],
+            'detour_overhead_m': detour_overhead_m,
+            'cost_increase_pct': cost_increase_pct,
             'recommendations': recs,
+            'safety_buffer': safety_buffer
         }
 
-    def _estimate_duration(self, degradations):
-        """Estimer la durée totale de restauration"""
-        durations = {
-            'champignons': 14,
-            'humidite': 10,
-            'fissures': 4,
-            'erosion': 5,
-            'effritement': 4,
-            'decoloration': 1
-        }
-        
-        total_days = 0
-        for d in degradations:
-            deg_type = d['type']
-            if deg_type in durations:
-                total_days = max(total_days, durations[deg_type])
-        
-        return f"{total_days}-{total_days+5} jours"
-    
-    def _estimate_cost(self, degradations):
-        """Estimer le facteur de coût"""
-        total_factor = sum([
-            self.restoration_techniques.get(d['type'], {}).get('cost_factor', 1.0)
-            for d in degradations
-        ])
-        
-        return round(total_factor / len(degradations), 2) if degradations else 1.0
-    
-    def _get_safety_measures(self):
-        """Obtenir les mesures de sécurité"""
-        return [
-            'Inspection de stabilité structurelle avant travaux',
-            'Installation d\'échafaudage sécurisé',
-            'Équipement de protection individuelle obligatoire',
-            'Ventilation adéquate pendant les traitements chimiques',
-            'Évaluation asbestos avant modification',
-            'Mise en place de barrières de sécurité'
-        ]
-    
-    def _get_monitoring_plan(self):
-        """Obtenir le plan de suivi post-restauration"""
-        return {
-            'frequency': 'Inspections trimestrielles pendant 2 ans',
-            'checklist': [
-                'Intégrité des scellants',
-                'Absence de nouvelles fissures',
-                'Contrôle d\'humidité',
-                'État du revêtement protecteur',
-                'Efficacité de la ventilation'
-            ],
-            'maintenance': 'Nettoyage annuel et retraitement tous les 5 ans'
-        }
-    
-    def _get_precautions(self, degradation_type):
-        """Obtenir les précautions pour un type de dégradation"""
-        precautions = {
-            'champignons': ['Masques respiratoires', 'Isolation des zones', 'Ventilation forcée'],
-            'humidite': ['Évaluation électrique', 'Gants étanches', 'Dés-humidification'],
-            'fissures': ['Évaluation structurelle', 'Étaiement si nécessaire'],
-            'erosion': ['Protection anti-poussière', 'Contrôle des débris'],
-            'effritement': ['Récupération des débris', 'Protection du sol'],
-            'decoloration': ['Nettoyage délicat', 'Ventilation']
-        }
-        
-        return precautions.get(degradation_type, [])
-    
-    def _get_expected_outcome(self, degradation_type):
-        """Obtenir le résultat attendu"""
-        outcomes = {
-            'champignons': 'Élimination complète, surface saine, prévention de réinfection',
-            'humidite': 'Régulation d\'humidité normale, prévention de dégâts futurs',
-            'fissures': 'Fissures colmatées, structure stabilisée',
-            'erosion': 'Surface restaurée, protection à long terme',
-            'effritement': 'Matériau consolidé, structure intacte',
-            'decoloration': 'Couleur uniforme restaurée, surface protégée'
-        }
-        
-        return outcomes.get(degradation_type, 'Amélioration significative attendue')
-    
-    def _get_recommendation(self, degradation_type):
-        """Obtenir la recommandation"""
-        recommendations = {
-            'champignons': 'Traitement prioritaire immédiat pour éviter propagation',
-            'humidite': 'Diagnostic complet de source recommandé',
-            'fissures': 'Évaluation structurelle avant intervention',
-            'erosion': 'Protection supplémentaire recommandée',
-            'effritement': 'Intervention rapide pour prévention',
-            'decoloration': 'Traitement cosmétique avec protection'
-        }
-        
-        return recommendations.get(degradation_type, 'Intervention recommandée')
-    
-    def _create_timeline(self, phases):
-        """Créer un timeline des travaux"""
-        timeline = []
-        cumulative_days = 0
-        
-        for i, phase in enumerate(phases, 1):
-            # Extraire le nombre de jours de la durée
-            duration_str = phase['duration']
-            try:
-                days = int(duration_str.split('-')[0])
-            except:
-                days = 5
-            
-            timeline.append({
-                'week': (cumulative_days // 7) + 1,
-                'phase': i,
-                'type': phase['type'],
-                'start_day': cumulative_days + 1,
-                'end_day': cumulative_days + days,
-                'duration_days': days
-            })
-            
-            cumulative_days += days
-        
-        return timeline

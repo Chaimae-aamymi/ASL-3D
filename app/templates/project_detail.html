@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <title>Détails du Projet — ASL-3D</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -12,9 +13,12 @@
 <body>
     <div class="app-wrapper">
         <aside class="sidebar">
-            <div class="sidebar-logo"><span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
-                <h1>ASL-3D</h1>
-                <p class="tagline">Restauration Numérique Intelligente</p>
+            <div class="sidebar-logo">
+                <span class="logo-icon"><img src="{{ url_for('static', filename='logo.png') }}" alt="ASL-3D Logo" style="width:44px;height:44px;object-fit:contain;border-radius:10px;"></span>
+                <div class="logo-text">
+                    <h1>ASL-3D</h1>
+                    <p class="tagline">Restauration Numérique Intelligente</p>
+                </div>
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
@@ -24,8 +28,9 @@
                             class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
                 <a href="/scanner" class="nav-item" title="Scanner"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
-                <a href="/geospatial-3d" class="nav-item" title="Jumeau Numérique"><span class="nav-icon"><i
-                            class="ph-duotone ph-globe-hemisphere-west"></i></span><span>Jumeau Numérique</span></a>
+                <a href="/reconstruction" class="nav-item" title="Reconstruction 3D"><span class="nav-icon"><i
+                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
+
                 <a href="/analysis" class="nav-item" title="Analyse IA"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
                 <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
@@ -40,7 +45,7 @@
         <div class="main-wrapper">
             <header class="main-header">
                 <div class="header-logo-mobile">
-                    <i class="ph-fill ph-bank"></i>
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="ASL-3D" style="width:30px;height:30px;object-fit:contain;border-radius:6px;">
                     <span>ASL-3D</span>
                 </div>
                 <div class="header-user">
@@ -142,21 +147,18 @@
                     </a>
                     
                     <form action="/reconstruct/{{ project.id }}" method="POST" style="margin: 0;">
-                        <button type="submit" class="btn btn-heritage" style="background: var(--accent-gradient); border: none; color: white;">
-                            <i class="ph-bold ph-cube" style="margin-right:8px;"></i> Lancer la Reconstruction 3D IA
+                        <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #FF9D6C 0%, #BB4E75 100%); border: none; color: white;" title="Reconstruction photogrammétrique complète via COLMAP & Blender">
+                            <i class="ph-bold ph-cube" style="margin-right:8px;"></i> Reconstruction SfM (COLMAP/Blender)
                         </button>
                     </form>
 
-                    <a href="/geospatial-3d?project_id={{ project.id }}" class="btn btn-secondary">
-                        <i class="ph-bold ph-globe-hemisphere-west" style="margin-right:8px;"></i> Jumeau Numérique 3D
-                    </a>
+
                     <a href="/restoration-guide?project_id={{ project.id }}" class="btn btn-secondary">
                         <i class="ph-bold ph-clipboard-text" style="margin-right:8px;"></i> Guide Restauration
                     </a>
                 </div>
 
                 <!-- PROGRESS INDICATOR FOR RECONSTRUCTION -->
-                {% set active_rec = TaskStatus.query.filter_by(project_id=project.id, task_type='reconstruction', status='running').first() %}
                 {% if active_rec %}
                 <div style="margin-top: 1.5rem; padding: 1.2rem; background: rgba(108, 99, 255, 0.1); border: 1px solid var(--accent); border-radius: 12px; display: flex; align-items: center; gap: 1rem;">
                     <i class="ph-duotone ph-cpu ph-spin" style="font-size: 1.5rem; color: var(--accent);"></i>
@@ -181,3 +183,4 @@
 </body>
 
 </html>
+

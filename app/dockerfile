@@ -1,0 +1,45 @@
+FROM python:3.10-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DEFAULT_TIMEOUT=120 \
+    # Port imposé par Hugging Face Spaces
+    PORT=7860 \
+    # Mode production (pas de debug)
+    FLASK_ENV=production \
+    # Désactiver Ngrok/GPU distant (on tourne en autonome)
+    REMOTE_GPU_API_URL=""
+
+WORKDIR /app
+
+# Dépendances système pour OpenCV, Open3D
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libglib2.0-0 \
+    libgl1 \
+    libgomp1 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements_hf.txt .
+
+RUN python -m pip install --upgrade pip setuptools wheel \
+    && pip install --default-timeout=180 --retries=5 -r requirements_hf.txt
+
+COPY . .
+
+# Créer les dossiers nécessaires
+RUN mkdir -p uploads outputs logs data
+
+# Initialiser la base de données SQLite (pas PostgreSQL sur HF)
+RUN python create_db.py || true
+
+EXPOSE 7860
+
+# Hugging Face attend que l'app tourne sur 0.0.0.0:7860
+ENV FLASK_RUN_HOST=0.0.0.0
+ENV FLASK_RUN_PORT=7860
+
+CMD ["python", "run.py"]

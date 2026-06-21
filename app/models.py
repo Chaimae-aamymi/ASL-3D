@@ -3,6 +3,7 @@ models.py — SQLAlchemy models for ASL-3D (PostgreSQL)
 Connection URI: postgresql://postgres:admin@localhost/asl3d_db
 """
 from datetime import datetime
+import secrets
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -19,10 +20,13 @@ class User(UserMixin, db.Model):
     password_hash  = db.Column(db.String(255), nullable=True)
     oauth_provider = db.Column(db.Enum('local', 'google', 'github', name='oauth_providers'), default='local')
     oauth_id       = db.Column(db.String(120), nullable=True)
-    role           = db.Column(db.Enum('admin', 'ingenieur', 'lecteur', name='user_roles'), default='ingenieur')
-    avatar_url     = db.Column(db.String(255), nullable=True)
-    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
-    last_login     = db.Column(db.DateTime, nullable=True)
+    role               = db.Column(db.Enum('admin', 'ingenieur', 'lecteur', name='user_roles'), default='ingenieur')
+    avatar_url         = db.Column(db.String(255), nullable=True)
+    created_at         = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login         = db.Column(db.DateTime, nullable=True)
+    # Vérification email
+    is_verified        = db.Column(db.Boolean, default=False, nullable=False)
+    verification_token = db.Column(db.String(100), nullable=True, unique=True)
 
     projects = db.relationship('Project', backref='owner', lazy=True, cascade='all, delete-orphan')
 

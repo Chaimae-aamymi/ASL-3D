@@ -19,7 +19,7 @@ class Config:
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
     
     # Fichiers autorisés
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'obj', 'ply', 'gltf'}
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'jfif', 'gif', 'bmp', 'obj', 'ply', 'gltf'}
     
     # Détection
     MIN_DEGRADATION_AREA = 50  # Pixels carrés

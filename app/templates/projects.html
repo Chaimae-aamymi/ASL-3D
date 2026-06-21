@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <title>Gestion des Projets — ASL-3D</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -182,9 +183,12 @@
     <div class="app-wrapper">
         <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div class="sidebar-logo"><span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
-                <h1>ASL-3D</h1>
-                <p class="tagline">Restauration Numérique Intelligente</p>
+            <div class="sidebar-logo">
+                <span class="logo-icon"><img src="{{ url_for('static', filename='logo.png') }}" alt="ASL-3D Logo" style="width:44px;height:44px;object-fit:contain;border-radius:10px;"></span>
+                <div class="logo-text">
+                    <h1>ASL-3D</h1>
+                    <p class="tagline">Restauration Numérique Intelligente</p>
+                </div>
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
@@ -194,8 +198,9 @@
                             class="ph-duotone ph-folder-open"></i></span><span>Gestion Projets</span></a>
                 <a href="/scanner" class="nav-item" title="Scanner"><span class="nav-icon"><i
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
-                <a href="/geospatial-3d" class="nav-item" title="Reconstruction & Jumeau Numérique"><span class="nav-icon"><i
-                            class="ph-duotone ph-globe-hemisphere-west"></i></span><span>Reconstruction & Jumeau</span></a>
+                <a href="/reconstruction" class="nav-item" title="Reconstruction 3D"><span class="nav-icon"><i
+                            class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
+
                 <a href="/analysis" class="nav-item" title="Analyse IA"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
                 <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
@@ -210,7 +215,7 @@
         <div class="main-wrapper">
             <header class="main-header">
                 <div class="header-logo-mobile">
-                    <i class="ph-fill ph-bank"></i>
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="ASL-3D" style="width:30px;height:30px;object-fit:contain;border-radius:6px;">
                     <span>ASL-3D</span>
                 </div>
                 <div class="header-user">
@@ -257,8 +262,8 @@
                         <span class="stat-label">Total Projets</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-val" style="color:#ff6b6b;">{{ danger_count }}</span>
-                        <span class="stat-label">En Danger</span>
+                        <span class="stat-val" style="color:#6c63ff;">{{ nouveau_count }}</span>
+                        <span class="stat-label">Nouveaux</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-val" style="color:#ffd166;">{{ inprogress_count }}</span>
@@ -268,13 +273,18 @@
                         <span class="stat-val" style="color:#06d6a0;">{{ completed_count }}</span>
                         <span class="stat-label">Terminés</span>
                     </div>
+                    <div class="stat-item">
+                        <span class="stat-val" style="color:#ff6b6b;">{{ danger_count }}</span>
+                        <span class="stat-label">En Danger</span>
+                    </div>
                 </div>
 
                 {% if projects %}
                 <div class="projects-grid">
                     {% for p in projects %}
+                    {% set status_labels = {'nouveau': 'Nouveau', 'en_cours': 'En Cours', 'termine': 'Terminé', 'danger': 'En Danger', 'archive': 'Archivé'} %}
                     <div class="project-card">
-                        <span class="project-status status-{{ p.status }}">{{ p.status }}</span>
+                        <span class="project-status status-{{ p.status }}">{{ status_labels.get(p.status, p.status) }}</span>
                         <div class="project-info">
                             <span class="monument-name">{{ p.monument }}</span>
                             <h3>{{ p.name }}</h3>
@@ -291,9 +301,7 @@
                             <a href="/analysis?project_id={{ p.id }}" class="action-btn btn-view">
                                 <i class="ph-bold ph-eye"></i> Analyse
                             </a>
-                            <a href="/geospatial-3d?project_id={{ p.id }}" class="action-btn btn-view">
-                                <i class="ph-bold ph-cube"></i> Scanner 3D
-                            </a>
+
                             <button type="button" onclick="viewPhotos({{ p.id }}, '{{ p.name | escape }}')" class="action-btn btn-view" style="width:100%; cursor:pointer; border:none; grid-column: span 1;">
                                 <i class="ph-bold ph-images"></i> Photos
                             </button>
@@ -422,3 +430,4 @@
 </body>
 
 </html>
+

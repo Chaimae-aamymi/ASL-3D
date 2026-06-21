@@ -1,25 +1,27 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <title>Reconstruction 3D — ASL-3D</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    {% if active_task and active_task.status == 'running' %}
-    <!-- Auto-refresh every 5s while model is being generated -->
-    <meta http-equiv="refresh" content="5;url=/reconstruction?project_id={{ selected_project_id }}&quality={{ request.args.get('quality', 'high') }}">
-    {% endif %}
+    <script src="{{ url_for('static', filename='js/fit_model_viewer.js') }}" defer></script>
+    <!-- Dynamic progress handled via AJAX below -->
 </head>
 
 <body>
     <div class="app-wrapper">
         <aside class="sidebar">
-            <div class="sidebar-logo"><span class="logo-icon"><i class="ph-fill ph-bank"></i></span>
-                <h1>ASL-3D</h1>
-                <p class="tagline">Restauration Numérique Intelligente</p>
+            <div class="sidebar-logo">
+                <span class="logo-icon"><img src="{{ url_for('static', filename='logo.png') }}" alt="ASL-3D Logo" style="width:44px;height:44px;object-fit:contain;border-radius:10px;"></span>
+                <div class="logo-text">
+                    <h1>ASL-3D</h1>
+                    <p class="tagline">Restauration Numérique Intelligente</p>
+                </div>
             </div>
             <nav class="sidebar-nav">
                 <span class="nav-label">Navigation</span>
@@ -31,6 +33,7 @@
                             class="ph-duotone ph-camera"></i></span><span>Scanner</span></a>
                 <a href="/reconstruction" class="nav-item active" title="Reconstruction 3D"><span class="nav-icon"><i
                             class="ph-duotone ph-cube"></i></span><span>Reconstruction 3D</span></a>
+
                 <a href="/analysis" class="nav-item" title="Analyse IA"><span class="nav-icon"><i
                             class="ph-duotone ph-magnifying-glass"></i></span><span>Analyse IA</span></a>
                 <a href="/restoration-guide" class="nav-item" title="Guide Restauration"><span class="nav-icon"><i
@@ -45,7 +48,7 @@
         <div class="main-wrapper">
             <header class="main-header">
                 <div class="header-logo-mobile">
-                    <i class="ph-fill ph-bank"></i>
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="ASL-3D" style="width:30px;height:30px;object-fit:contain;border-radius:6px;">
                     <span>ASL-3D</span>
                 </div>
                 <div class="header-user">
@@ -66,8 +69,8 @@
                 <div class="page-header">
                     <div class="breadcrumb"><i class="ph-fill ph-cube" style="margin-right:4px;"></i> Reconstruction 3D
                     </div>
-                    <h2>Reconstruction 3D — OpenCV SfM</h2>
-                    <p>Générez un modèle 3D de votre monument à partir des photos importées</p>
+                    <h2>Reconstruction 3D — COLMAP + Maillage Homogène</h2>
+                    <p>Générez un modèle 3D lisse et homogène de votre monument à partir des photos importées</p>
                 </div>
 
                 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -95,20 +98,18 @@
                                 </select>
                             </div>
                             <div class="option-group">
-                                <label for="quality">Qualité :</label>
+                                <label for="quality">Qualité (COLMAP SfM) :</label>
                                 <select name="quality" id="quality" class="select-input">
-                                    <option value="low" {% if request.args.get('quality')=='low' %}selected{% endif %}>Basse (rapide)</option>
+                                    <option value="low" {% if request.args.get('quality')=='low' %}selected{% endif %}>Basse (rapide, ~15 mins)</option>
                                     <option value="medium" {% if request.args.get('quality')=='medium' %}selected{% endif %}>Moyenne</option>
-                                    <option value="high" {% if not request.args.get('quality') or request.args.get('quality')=='high' %}selected{% endif %}>Haute (recommandée)</option>
-                                    <option value="ultra" {% if request.args.get('quality')=='ultra' %}selected{% endif %}>Ultra (lent)</option>
-                                    <option value="cloud" {% if request.args.get('quality')=='cloud' %}selected{% endif %}>☁️ Cloud AI (Sans GPU NVIDIA)</option>
+                                    <option value="high" {% if not request.args.get('quality') or request.args.get('quality')=='high' %}selected{% endif %}>Haute (recommandée, ~45 mins)</option>
+                                    <option value="ultra" {% if request.args.get('quality')=='ultra' %}selected{% endif %}>Ultra (lent, 1h+)</option>
                                 </select>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary" {% if active_task and
-                            active_task.status=='running' %}disabled{% endif %}>
+                        <button type="submit" class="btn btn-primary" {% if running_task %}disabled{% endif %}>
                             <i class="ph-bold ph-play-circle" style="margin-right:8px;"></i>
-                            {% if active_task and active_task.status == 'running' %}
+                            {% if running_task %}
                             Traitement en cours...
                             {% else %}
                             Démarrer la Reconstruction 3D
@@ -117,50 +118,113 @@
                     </form>
 
                     <!-- Pipeline Steps (visual indicator) -->
-                    <div style="display:flex;gap:0.8rem;margin-top:2rem;flex-wrap:wrap;">
-                        {% set steps = [('ph-image','Chargement'),('ph-chart-scatter','Extraction
-                        SIFT'),('ph-arrows-in','BF Matching'),('ph-perspective','Triangulation'),('ph-export','Export
-                        GLB')] %}
+                    <div style="display:flex;gap:0.5rem;margin-top:2rem;flex-wrap:wrap;">
+                        {% set steps = [('ph-image','Images'),('ph-chart-scatter','SIFT'),('ph-arrows-in','Matching'),('ph-perspective','Mapper'),('ph-funnel','Débruitage'),('ph-grid-four','Voxel'),('ph-cube','Poisson'),('ph-wave-sine','Lissage'),('ph-export','Export GLB')] %}
                         {% for icon, label in steps %}
                         <div
-                            style="flex:1;min-width:100px;padding:0.7rem;background:rgba(255,255,255,0.04);border-radius:8px;text-align:center;border:1px solid {% if result %}var(--accent-2){% else %}var(--glass-border){% endif %};">
+                            style="flex:1;min-width:80px;padding:0.6rem 0.3rem;background:rgba(255,255,255,0.04);border-radius:8px;text-align:center;border:1px solid {% if result %}var(--accent-2){% else %}var(--glass-border){% endif %};">
                             <i class="ph-duotone {{ icon }}"
-                                style="font-size:1.3rem;color:{% if result %}var(--accent-2){% else %}var(--text-muted){% endif %};"></i>
-                            <p style="font-size:0.72rem;margin:0.3rem 0 0;color:var(--text-muted);">{{ label }}</p>
+                                style="font-size:1.2rem;color:{% if result %}var(--accent-2){% else %}var(--text-muted){% endif %};"></i>
+                            <p style="font-size:0.65rem;margin:0.2rem 0 0;color:var(--text-muted);">{{ label }}</p>
                             {% if result %}<i class="ph-bold ph-check"
-                                style="color:var(--accent-2);font-size:0.7rem;"></i>{% endif %}
+                                style="color:var(--accent-2);font-size:0.65rem;"></i>{% endif %}
                         </div>
                         {% endfor %}
                     </div>
                 </section>
 
-                <!-- WAITING INDICATOR (meta-refresh active) -->
-                {% if active_task and active_task.status == 'running' %}
-                <div
-                    style="margin-top:2rem;padding:1.5rem;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:14px;text-align:center;">
-                    <i class="ph-duotone ph-hourglass-medium" style="font-size:2.5rem;color:var(--accent);"></i>
-                    <p style="margin-top:0.8rem;font-weight:600;">Reconstruction en cours...</p>
-                    <p style="font-size:0.85rem;color:var(--text-muted);">Cette page se rafraîchit automatiquement
-                        toutes les 5 secondes.</p>
+                <!-- WAITING INDICATOR (Dynamic Progress Bar) -->
+                {% if running_task %}
+                <div id="reconstruction-progress-container"
+                    style="margin-top:2rem;padding:2rem;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:14px;text-align:center;box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                    <i class="ph-duotone ph-cube" style="font-size:3rem;color:var(--accent);"></i>
+                    <p id="task-message" style="margin-top:0.8rem;font-weight:600;font-size:1.2rem;">{{ running_task.message or 'Reconstruction en cours...' }}</p>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem;">Pipeline COLMAP → Débruitage → Poisson → Lissage → Export GLB homogène.</p>
+                    
+                    <div style="width: 100%; max-width: 500px; margin: 0 auto; background: rgba(255,255,255,0.05); border-radius: 12px; overflow: hidden; height: 16px; border: 1px solid var(--glass-border);">
+                        <div id="progress-bar-fill" style="width: {{ running_task.progress or 0 }}%; height: 100%; background: linear-gradient(90deg, #6c63ff, #06d6a0); transition: width 0.5s ease-out;"></div>
+                    </div>
+                    <p id="progress-text" style="font-weight: 800; font-size: 1.5rem; margin-top: 0.8rem; color: var(--accent);">{{ running_task.progress or 0 }}%</p>
+                    <button type="button" id="cancel-reconstruction-btn" class="btn btn-secondary" style="margin-top:1rem;font-size:0.85rem;">
+                        <i class="ph-bold ph-x-circle" style="margin-right:6px;"></i> Annuler cette reconstruction
+                    </button>
                 </div>
+
+                <style>
+                    @keyframes pulse {
+                        0% { opacity: 0.4; }
+                        50% { opacity: 1; }
+                        100% { opacity: 0.4; }
+                    }
+                </style>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const taskId = {{ running_task.id }};
+                        const projectId = {{ selected_project_id or running_task.project_id }};
+                        const messageText = document.getElementById('task-message');
+                        const barFill = document.getElementById('progress-bar-fill');
+                        const progressText = document.getElementById('progress-text');
+                        
+                        let stallPolls = 0;
+                        let lastProgress = {{ running_task.progress or 0 }};
+
+                        document.getElementById('cancel-reconstruction-btn')?.addEventListener('click', () => {
+                            if (!confirm('Annuler la reconstruction en cours ?')) return;
+                            fetch(`/api/task_status/${taskId}/cancel`, { method: 'POST' })
+                                .then(() => { window.location.reload(); });
+                        });
+
+                        const interval = setInterval(() => {
+                            fetch(`/api/task_status/${taskId}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.message) {
+                                        messageText.textContent = data.message;
+                                    }
+                                    if (data.progress !== undefined) {
+                                        barFill.style.width = data.progress + '%';
+                                        progressText.textContent = data.progress + '%';
+                                        if (data.progress === lastProgress && data.progress <= 10) {
+                                            stallPolls++;
+                                        } else {
+                                            stallPolls = 0;
+                                            lastProgress = data.progress;
+                                        }
+                                    }
+                                    if (data.status === 'completed' || data.status === 'failed') {
+                                        clearInterval(interval);
+                                        setTimeout(() => {
+                                            window.location.href = `/reconstruction?project_id=${projectId}&_=${Date.now()}`;
+                                        }, 500);
+                                    }
+                                })
+                                .catch(err => console.error("Erreur de suivi de progression:", err));
+                        }, 2000);
+                    });
+                </script>
                 {% endif %}
 
                 <!-- ERROR INDICATOR -->
-                {% if active_task and active_task.status == 'failed' %}
+                {% if last_task and last_task.status == 'failed' and not running_task %}
                 <div
                     style="margin-top:2rem;padding:1.5rem;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:14px;text-align:center;">
                     <i class="ph-duotone ph-warning-circle" style="font-size:2.5rem;color:var(--danger);"></i>
                     <p style="margin-top:0.8rem;font-weight:600;color:var(--danger);">Échec de la reconstruction</p>
-                    <p style="font-size:0.85rem;color:var(--text-muted);">Erreur : {{ active_task.message }}</p>
+                    <p style="font-size:0.85rem;color:var(--text-muted);">Erreur : {{ last_task.message }}</p>
                 </div>
                 {% endif %}
 
                 <!-- RESULTS (model ready) -->
-                {% if result %}
+                {% if model_glb_url %}
+                {% set glb_src = model_glb_url %}
+                {% set dl_name = result.model_file if result else ('model_' ~ selected_project_id ~ '.glb') %}
+                {% set pid = result.project_id if result else selected_project_id %}
                 <section style="margin-top:2rem;">
                     <h2><i class="ph-duotone ph-check-circle" style="color:var(--accent-2);margin-right:8px;"></i>
-                        Modèle 3D Prêt</h2>
+                        Modèle 3D Prêt{% if result and result.quality == 'ultra' %} <span style="font-size:0.75rem;color:var(--accent-2);">(texturé)</span>{% endif %}</h2>
 
+                    {% if result %}
                     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.5rem 0;">
                         <div style="padding:1rem;background:var(--bg-card);border-radius:10px;text-align:center;">
                             <i class="ph-fill ph-graph" style="font-size:1.5rem;color:var(--accent);"></i>
@@ -178,55 +242,35 @@
                             <p style="font-size:0.75rem;color:var(--text-muted);">Format</p>
                         </div>
                     </div>
+                    {% endif %}
 
-                    <!-- 3D RESULTS — Static Preview (Python) + Interactive Toggle -->
-                    {% if result.model_file.endswith('.glb') %}
                     <div style="margin:1.5rem 0;">
-                        <h3><i class="ph-duotone ph-image" style="margin-right:8px;"></i> Aperçu du Rendu (Généré par Python)</h3>
-                        
-                        <!-- STATIC IMAGE (No JS needed) -->
-                        <div id="static-preview-container" style="width:100%;border-radius:16px;background:#0d1117;overflow:hidden;border:1px solid var(--glass-border);text-align:center;">
-                            <img src="/outputs/{{ result.model_file.replace('.glb', '.png') }}" alt="Rendu 3D" style="max-width:100%;height:auto;display:block;margin:0 auto;">
-                        </div>
-
-                        <!-- INTERACTIVE TOGGLE -->
-                        <div style="margin-top:1rem;text-align:center;">
-                            <button id="toggle-3d-btn" class="btn btn-secondary" style="font-size:0.85rem;padding:0.5rem 1rem;">
-                                <i class="ph-bold ph-cube" style="margin-right:8px;"></i> Activer la vue 3D Interactive (JS)
-                            </button>
-                        </div>
-
-                        <!-- HIDDEN 3D CONTAINER -->
-                        <div id="three-container" style="width:100%;height:500px;border-radius:16px;background:#0d1117;margin-top:1rem;position:relative;overflow:hidden;border:1px solid var(--glass-border);display:none;">
-                            <!-- Three.js will render here only on demand -->
+                        <h3><i class="ph-duotone ph-cube" style="margin-right:8px;"></i> Aperçu 3D interactif</h3>
+                        <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 0.8rem;">
+                            {% if result and result.quality == 'ultra' %}
+                            Modèle texturé haute fidélité (photos projetées sur le maillage).
+                            {% elif result and result.quality == 'high' %}
+                            Maillage 3D reconstruit par algorithme Poisson (CPU) — géométrie complète.
+                            {% else %}
+                            Aperçu géométrique du monument reconstruit.
+                            {% endif %}
+                        </p>
+                        <div style="width:100%;padding:10px;background:rgba(0,0,0,0.3);border-radius:16px;border:1px solid var(--glass-border);overflow:hidden;">
+                            <model-viewer src="{{ glb_src }}" alt="Modèle 3D reconstruit"
+                                data-autofit auto-rotate camera-controls
+                                style="width:100%;height:min(85vh, 900px);min-height:520px;background-color:#0d1117;"
+                                interaction-prompt="auto" loading="eager" reveal="auto"
+                                shadow-intensity="1" exposure="1.2">
+                            </model-viewer>
                         </div>
                     </div>
 
-                    <script type="module">
-                        import '/static/js/three_viewer.js';
-                        
-                        const toggleBtn = document.getElementById('toggle-3d-btn');
-                        const previewCont = document.getElementById('static-preview-container');
-                        const threeCont = document.getElementById('three-container');
-
-                        toggleBtn.addEventListener('click', () => {
-                            // Switch views
-                            previewCont.style.display = 'none';
-                            threeCont.style.display = 'block';
-                            toggleBtn.style.display = 'none';
-                            
-                            // Initialize Three.js
-                            new ASL3DViewer('three-container', '/outputs/{{ result.model_file }}');
-                        });
-                    </script>
-                    {% endif %}
-
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem;">
-                        <a href="/api/download/{{ result.model_file }}" class="btn btn-secondary">
+                        <a href="/api/download/{{ dl_name }}" class="btn btn-secondary">
                             <i class="ph-bold ph-download-simple" style="margin-right:8px;"></i> Télécharger le Modèle
                             .GLB
                         </a>
-                        <a href="/analysis?project_id={{ result.project_id }}" class="btn btn-primary">
+                        <a href="/analysis?project_id={{ pid }}" class="btn btn-primary">
                             <i class="ph-bold ph-magnifying-glass" style="margin-right:8px;"></i> Analyser les
                             Dégradations
                         </a>
@@ -245,3 +289,4 @@
 </body>
 
 </html>
+

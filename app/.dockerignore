@@ -1,0 +1,30 @@
+# Python virtual environments and caches
+venv_asl3d/
+venv/
+.env
+.env.*
+*.pyc
+__pycache__/
+.pytest_cache/
+
+# Large outputs and uploads
+outputs/
+app/outputs/
+static/uploads/
+app/static/uploads/
+uploads/
+
+# Git and editor artifacts
+.git
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Build / packaging
+dist/
+build/
+
+# Optional: exclude large models or datasets
+# models/
+# data/
